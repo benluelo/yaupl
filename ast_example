@@ -1,0 +1,23 @@
+body
+  0: expression
+    type: ___
+    value: function
+      name: if
+      paramaters
+        0: expression
+          type: bln
+          value: true
+        1: expression
+          0: function
+            name: print
+            parameters
+              0: expression
+                type: str
+                value: "true"
+        2: expression
+          0: function
+            name: print
+            parameters
+              0: expression
+                type: str
+                value: "not true"
