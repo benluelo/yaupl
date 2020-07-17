@@ -1,4 +1,6 @@
-#[derive(Clone, Debug)]
+use colored::*;
+
+#[derive(Clone, Debug, std::cmp::PartialEq)]
 pub enum TokenType {
     BinaryOperator(String),
     StrLiteral(String),
@@ -23,8 +25,6 @@ pub enum TokenType {
     KeywordReturn,
     KeywordWith,
     KeywordAs,
-    KeywordTrue,
-    KeywordFalse,
     Keyword___,
     KeywordStr,
     KeywordBln,
@@ -42,40 +42,44 @@ impl std::fmt::Display for TokenType {
             f,
             "{}",
             match &*self {
-                TokenType::BinaryOperator(val) => format!("BinaryOperator({})", val),
-                TokenType::StrLiteral(val) => format!("StrLiteral({})", val),
-                TokenType::NumLiteral(val) => format!("NumLiteral({})", val),
-                TokenType::BlnLiteral(val) => format!("BlnLiteral({})", val),
-                TokenType::BraceSquareOpen => "BraceSquareOpen".to_string(),
-                TokenType::BraceSquareClose => "BraceSquareClose".to_string(),
-                TokenType::BraceCurlyOpen => "BraceCurlyOpen".to_string(),
-                TokenType::BraceCurlyClose => "BraceCurlyClose".to_string(),
-                TokenType::BraceGroupOpen => "BraceGroupOpen".to_string(),
-                TokenType::BraceGroupClose => "BraceGroupClose".to_string(),
-                TokenType::TeslaOpen => "TeslaOpen".to_string(),
-                TokenType::TeslaClose => "TeslaClose".to_string(),
-                TokenType::ArrowLeft => "ArrowLeft".to_string(),
-                TokenType::ArrowRight => "ArrowRight".to_string(),
-                TokenType::ArrowRightThick => "ArrowRightThick".to_string(),
-                TokenType::ArrowRightCurly => "ArrowRightCurly".to_string(),
-                TokenType::CommentOpen => "CommentOpen".to_string(),
-                TokenType::DocCommentOpen => "DocCommentOpen".to_string(),
-                TokenType::CommentClose => "CommentClose".to_string(),
-                TokenType::KeywordExport => "KeywordExport".to_string(),
-                TokenType::KeywordReturn => "KeywordReturn".to_string(),
-                TokenType::KeywordWith => "KeywordWith".to_string(),
-                TokenType::KeywordAs => "KeywordAs".to_string(),
-                TokenType::KeywordTrue => "KeywordTrue".to_string(),
-                TokenType::KeywordFalse => "KeywordFalse".to_string(),
-                TokenType::Keyword___ => "Keyword___".to_string(),
-                TokenType::KeywordStr => "KeywordStr".to_string(),
-                TokenType::KeywordBln => "KeywordBln".to_string(),
-                TokenType::KeywordNum => "KeywordNum".to_string(),
-                TokenType::KeywordEmp => "KeywordEmp".to_string(),
-                TokenType::Colon => "Colon".to_string(),
-                TokenType::Group => "Group".to_string(),
-                TokenType::Variable(val) => format!("Variable({})", val),
-                TokenType::Comma => "Comma".to_string(),
+                TokenType::BinaryOperator(val) => val.to_string(),
+                TokenType::StrLiteral(val) => format!("\"{}\"", val).green().to_string(),
+                TokenType::NumLiteral(val) => val.to_string().red().to_string(),
+                TokenType::BlnLiteral(val) => val.to_string().red().to_string(),
+                TokenType::BraceSquareOpen => "[".to_string(),
+                TokenType::BraceSquareClose => "]".to_string(),
+                TokenType::BraceCurlyOpen => "{".to_string(),
+                TokenType::BraceCurlyClose => "}".to_string(),
+                TokenType::BraceGroupOpen => "(|".to_string(),
+                TokenType::BraceGroupClose => "|)".to_string(),
+                TokenType::TeslaOpen => "(|-".to_string(),
+                TokenType::TeslaClose => "-|)".to_string(),
+                TokenType::ArrowLeft => "<-".to_string(),
+                TokenType::ArrowRight => "->".to_string(),
+                TokenType::ArrowRightThick => "=>".to_string(),
+                TokenType::ArrowRightCurly => "~>".to_string(),
+
+                TokenType::CommentOpen => "#[".dimmed().to_string(),
+                TokenType::DocCommentOpen => "!!#[".dimmed().to_string(),
+                TokenType::CommentClose => "]#".dimmed().to_string(),
+
+                // keywords (magenta)
+                TokenType::KeywordExport => "export".magenta().to_string(),
+                TokenType::KeywordReturn => "return".magenta().to_string(),
+                TokenType::KeywordWith => "with".magenta().to_string(),
+                TokenType::KeywordAs => "as".magenta().to_string(),
+
+                // types (blue)
+                TokenType::Keyword___ => "___".blue().to_string(),
+                TokenType::KeywordStr => "str".blue().to_string(),
+                TokenType::KeywordBln => "bln".blue().to_string(),
+                TokenType::KeywordNum => "num".blue().to_string(),
+                TokenType::KeywordEmp => "emp".blue().to_string(),
+
+                TokenType::Colon => ":".to_string(),
+                TokenType::Group => "@".to_string(),
+                TokenType::Variable(val) => val.to_string(),
+                TokenType::Comma => ",".to_string(),
             }
         )
     }
@@ -131,8 +135,8 @@ impl Tokenizer {
                 map.insert("with", TokenType::KeywordWith);
                 map.insert("as", TokenType::KeywordAs);
                 map.insert("return", TokenType::KeywordReturn);
-                map.insert("true", TokenType::KeywordTrue);
-                map.insert("false", TokenType::KeywordFalse);
+                map.insert("true", TokenType::BlnLiteral(true));
+                map.insert("false", TokenType::BlnLiteral(false));
                 map.insert("___", TokenType::Keyword___);
                 map.insert("num", TokenType::KeywordNum);
                 map.insert("str", TokenType::KeywordStr);
@@ -206,17 +210,19 @@ impl Tokenizer {
         let mut in_comment: bool = false;
         let mut ptr = 0usize;
         while let Some(c) = self.eat(&mut ptr) {
-            println!("{}", c);
+            println!("c: {}", c);
             println!("current_token: {}", current_token);
             println!("in_comment: {}", in_comment);
             println!("in_string: {}", in_string);
             println!("row: {}, col: {}", row, col);
             match *c {
+                '\r' => {}
                 '\n' => {
                     if in_comment {
                     } else if in_string {
                         panic!(format!("unterminated string literal at character {}.", ptr));
                     } else if current_token.len() > 0 {
+                        println!("current: \"{}\"", current_token);
                         self.add_token(&mut tokens, &current_token, (row, col));
                         current_token.clear();
                     }
@@ -436,12 +442,34 @@ impl Tokenizer {
                             tok.token_type.clone()
                         }
                     }
-                    TokenType::KeywordTrue => TokenType::BlnLiteral(true),
-                    TokenType::KeywordFalse => TokenType::BlnLiteral(false),
                     _ => tok.token_type.clone(),
                 },
                 ..*tok
             })
             .collect()
+    }
+
+    pub fn print(tokens: &Vec<Token>) -> String {
+        let mut final_string = String::new();
+        let mut indent = 0;
+        for tok in tokens.iter() {
+            match tok.token_type {
+                TokenType::BraceCurlyOpen => {
+                    final_string
+                        .push_str(format!("{}{}\n", "\t".repeat(indent), tok.token_type).as_str());
+                    final_string.push('\n');
+                    indent += 1
+                }
+                TokenType::BraceCurlyClose => {
+                    indent -= 1;
+                    final_string
+                        .push_str(format!("{}{}\n", "\t".repeat(indent), tok.token_type).as_str());
+                    final_string.push('\n')
+                }
+                _ => final_string
+                    .push_str(format!("{}{}\n", "\t".repeat(indent), tok.token_type).as_str()),
+            }
+        }
+        final_string
     }
 }

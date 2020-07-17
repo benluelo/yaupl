@@ -1,16 +1,21 @@
-pub trait Location {
-    type Row: Usize;
-    type Column: Usize;
+use crate::token;
 
-    fn row(&self) -> Self::Row;
-
-    fn col(&self) -> Self::Column;
-
-    fn set_row(&self, val: usize);
-
-    fn set_col(&self, val: usize);
+pub struct Position {
+    pub row: usize,
+    pub col: usize,
 }
 
-pub trait Usize {}
+pub struct Location {
+    pub start: Position,
+    pub end: Position,
+}
 
-impl Usize for usize {}
+pub struct Program {
+    body: Vec<Box<AstNode>>,
+}
+pub trait AstNode {}
+pub struct WithExpression {
+    location: Location,
+
+
+}
