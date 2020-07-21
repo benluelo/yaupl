@@ -1,0 +1,58 @@
+program = {with statement}, {expression};
+
+with statement = "with", whitespace, identifier, ".hmm", whitespace, "as",  whitespace, identifier;
+
+letter = "A" | "B" | "C" | "D" | "E" | "F" | "G"
+       | "H" | "I" | "J" | "K" | "L" | "M" | "N"
+       | "O" | "P" | "Q" | "R" | "S" | "T" | "U"
+       | "V" | "W" | "X" | "Y" | "Z" | "a" | "b"
+       | "c" | "d" | "e" | "f" | "g" | "h" | "i"
+       | "j" | "k" | "l" | "m" | "n" | "o" | "p"
+       | "q" | "r" | "s" | "t" | "u" | "v" | "w"
+       | "x" | "y" | "z" ;
+
+       digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+
+identifier = { letter | "_" } , letter , { letter | "_" } ;
+
+true = "true";
+false = "false";
+empty = "___";
+
+bln keyword = true | false ;
+
+function arrow = "->";
+
+square bracket open = "[";
+square bracket close = "]";
+
+primitive type = "str" | "bln" | "num" | "emp";
+
+type arrow = "=>";
+
+whitespace = " ", {" "};
+
+group type =
+    square bracket open,
+    type,
+    {comma, type},
+    square bracket close;
+
+function type = group type, whitespace, type arrow, whitespace, type;
+type = primitive type | group type | function type;
+
+binary operator = "+" | "-" | "*" | "/";
+
+expression = binary function | function;
+
+binary function = binary operator, whitespace, expression, whitespace, expression;
+
+function =
+    identifier, {whitespace},
+    square bracket open, {whitespace},
+    expression, {whitespace},
+    square bracket close, {whitespace},
+    square bracket open, {whitespace},
+    expression,
+    square bracket close, {whitespace};
