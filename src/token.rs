@@ -2,25 +2,105 @@ use colored::*;
 
 #[derive(Clone, Debug, std::cmp::PartialEq)]
 pub enum TokenType {
+    /// ### Examples
+    /// ```hmm
+    /// + - * / == != < > <= >=
+    /// ```
     BinaryOperator(String),
+    /// ### Examples
+    /// ```hmm
+    /// "..."
+    /// ```
     StrLiteral(String),
+    /// ### Examples
+    /// ```hmm
+    /// 71632
+    /// ```
     NumLiteral(f64),
+    /// ### Examples
+    /// ```hmm
+    /// true
+    /// ```
     BlnLiteral(bool),
+    /// ### Examples
+    /// ```hmm
+    /// [
+    /// ```
     BraceSquareOpen,
+    /// ### Examples
+    /// ```hmm
+    /// ]
+    /// ```
     BraceSquareClose,
+    /// ### Examples
+    /// ```hmm
+    /// {
+    /// ```
     BraceCurlyOpen,
+    /// ### Examples
+    /// ```hmm
+    /// }
+    /// ```
     BraceCurlyClose,
+    /// ### Examples
+    /// ```hmm
+    /// (|
+    /// ```
     BraceGroupOpen,
+    /// ### Examples
+    /// ```hmm
+    /// |)
+    /// ```
     BraceGroupClose,
+    /// ### Examples
+    /// ```hmm
+    /// -|)
+    /// ```
     TeslaOpen,
+    /// ### Examples
+    /// ```hmm
+    /// (|-
+    /// ```
     TeslaClose,
+    /// ### Examples
+    /// ```hmm
+    /// <-
+    /// ```
     ArrowLeft,
+    /// ### Examples
+    /// ```hmm
+    /// ->
+    /// ```
     ArrowRight,
+    /// ### Examples
+    /// ```hmm
+    /// =>
+    /// ```
     ArrowRightThick,
+    /// ### Examples
+    /// ```hmm
+    /// ~>
+    /// ```
     ArrowRightCurly,
+    /// ### Examples
+    /// ```hmm
+    /// #[
+    /// ```
     CommentOpen,
+    /// ### Examples
+    /// ```hmm
+    /// !!#[
+    /// ```
     DocCommentOpen,
+    /// ### Examples
+    /// ```hmm
+    /// ]#
+    /// ```
     CommentClose,
+    /// ### Examples
+    /// ```hmm
+    /// export
+    /// ```
     KeywordExport,
     KeywordReturn,
     KeywordWith,
@@ -30,11 +110,36 @@ pub enum TokenType {
     KeywordBln,
     KeywordNum,
     KeywordEmp,
+    /// ### Examples
+    /// ```hmm
+    /// :
+    /// ```
     Colon,
+    /// ### Examples
+    /// ```hmm
+    /// @
+    /// ```
     Group,
     Variable(String),
+    /// ### Examples
+    /// ```hmm
+    /// ,
+    /// ```
     Comma,
+    /// ### Examples
+    /// ```hmm
+    /// ;
+    /// ```
+    SemiColon,
 }
+
+// impl TokenType {
+//     pub fn value<T>(self) -> T {
+//         match self {
+//             TokenType::BinaryOperator()
+//         }
+//     }
+// }
 
 impl std::fmt::Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -80,12 +185,13 @@ impl std::fmt::Display for TokenType {
                 TokenType::Group => "@".to_string(),
                 TokenType::Variable(val) => val.to_string(),
                 TokenType::Comma => ",".to_string(),
+                TokenType::SemiColon => ";".to_string(),
             }
         )
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub location_start: (usize, usize),

@@ -1,8 +1,8 @@
-pub mod token;
 pub mod ast;
+pub mod token;
 
+use ast::funcs::*;
 use token::*;
-use ast::*;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

@@ -4,10 +4,10 @@ with hello.umm as hello
     |> [a: str] blah blah blah a is a string
 ]#
 export -> {
-    str some_string <- "kjsdhkjh",
-    num some_string_length <- length [some_string],
+    str some_string <- "kjsdhkjh";
+    num some_string_length <- length [some_string];
 
-    print ["oh hi there"],
+    print ["oh hi there"];
 
     [bln]=>num check_if_k [a: str, b: num, c: [num, bln]=>bln@] -> {
         return if
@@ -17,11 +17,11 @@ export -> {
             true
         ] [
             false
-        ],
-    },
+        ];
+    }
 
-    num@@ three_by_three_grid <- (| (|1 2 3|) (|4 5 6|) (|7.8 8 9|) |),
-},
+    num@@ three_by_three_grid <- (| (|1 2 3|) (|4 5 6|) (|7.8 8 9|) |);
+}
 
 
 !!#[
