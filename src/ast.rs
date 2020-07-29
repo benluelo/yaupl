@@ -171,16 +171,14 @@ pub mod defs {
         }
     }
 
-    pub type TokenStream<'token> = &'token mut Vec<Token>;
+    pub type TokenStream<'token> = &'token mut core::slice::Iter<'token, Token>;
 }
 
 pub mod funcs {
     use super::defs::*;
     use crate::token::*;
     pub fn match_with(tokens: TokenStream) -> AstNode<WithStatement> {
-        let mut tokens_iter = tokens.iter();
         dbg!(&tokens);
-        dbg!(&tokens_iter);
         if let (
             kw_with
             @
@@ -191,23 +189,23 @@ pub mod funcs {
             file
             @
             Token {
-                token_type: TokenType::Variable(_),
+                token_type: TokenType::Identifier(_),
                 ..
             },
             _kw_as,
             name
             @
             Token {
-                token_type: TokenType::Variable(_),
+                token_type: TokenType::Identifier(_),
                 ..
             },
         ) = (
-            tokens_iter
+            tokens
                 .next()
                 .expect("expected token \"with\"; this code should be unreachable"),
-            tokens_iter.next().expect("expected a file name"),
-            tokens_iter.next().expect("expected keyword \"as \""),
-            tokens_iter.next().expect("identifier expected"),
+            tokens.next().expect("expected a file name"),
+            tokens.next().expect("expected keyword \"as \""),
+            tokens.next().expect("identifier expected"),
         ) {
             AstNode::new(
                 Location {
@@ -219,7 +217,7 @@ pub mod funcs {
                         Location::from_token(file),
                         Identifier::new(
                             match &file.token_type {
-                                TokenType::Variable(val) => val,
+                                TokenType::Identifier(val) => val,
                                 _ => unreachable!(),
                             }
                             .into(),
@@ -229,7 +227,7 @@ pub mod funcs {
                         Location::from_token(name),
                         Identifier::new(
                             match &name.token_type {
-                                TokenType::Variable(val) => val,
+                                TokenType::Identifier(val) => val,
                                 _ => unreachable!(),
                             }
                             .into(),
@@ -243,8 +241,6 @@ pub mod funcs {
     }
 
     pub fn match_export(tokens: TokenStream) -> AstNode<ExportStatement> {
-        let mut tokens_iter = tokens.iter();
-
         if let Some(
             kw_export
             @
@@ -252,13 +248,13 @@ pub mod funcs {
                 token_type: TokenType::KeywordExport,
                 ..
             },
-        ) = tokens_iter.next()
+        ) = tokens.next()
         {
             // found export keyword, look for `->`:
             if let Some(Token {
                 token_type: TokenType::ArrowRight,
                 ..
-            }) = tokens_iter.next()
+            }) = tokens.next()
             {
                 if let Some(
                     block_start
@@ -267,7 +263,7 @@ pub mod funcs {
                         token_type: TokenType::BraceCurlyOpen,
                         ..
                     },
-                ) = tokens_iter.next()
+                ) = tokens.next()
                 {
                     let mut body: Vec<AstNode<TopLevel>> = vec![];
                     loop {
@@ -275,7 +271,7 @@ pub mod funcs {
                         let mut expression_stream = {
                             let mut temp_stream: Vec<Token> = vec![];
                             let mut depth = 0;
-                            while let Some(tok) = tokens_iter.next() {
+                            while let Some(tok) = tokens.next() {
                                 // on `{` increase depth
                                 if let Token {
                                     token_type: TokenType::BraceCurlyOpen,
@@ -314,7 +310,7 @@ pub mod funcs {
                                     }
                                 }
                             }
-                            temp_stream
+                            temp_stream.iter()
                         };
 
                         // first, try to parse a literal expression (`1`, `"hi"`, `true`)
@@ -333,84 +329,104 @@ pub mod funcs {
     }
 
     pub fn try_parse_literal<'tok>(tokens: TokenStream) -> Option<AstNode<Expression>> {
-        if tokens.len() != 1 {
-            return None;
-        } else {
-            let mut iter = tokens.iter();
-            match iter.next() {
-                // bolean token
-                Some(
-                    bln_tok
-                    @
-                    Token {
-                        token_type: TokenType::BlnLiteral(_),
-                        ..
-                    },
-                ) => Some(AstNode::new(
-                    Location::from_token(bln_tok),
-                    Expression::BooleanLiteral(match bln_tok.token_type {
-                        TokenType::BlnLiteral(val) => val,
-                        _ => unreachable!(),
-                    }),
-                )),
+        match tokens.next() {
+            // bolean token
+            Some(
+                bln_tok
+                @
+                Token {
+                    token_type: TokenType::BlnLiteral(_),
+                    ..
+                },
+            ) => Some(AstNode::new(
+                Location::from_token(bln_tok),
+                Expression::BooleanLiteral(match bln_tok.token_type {
+                    TokenType::BlnLiteral(val) => val,
+                    _ => unreachable!(),
+                }),
+            )),
 
-                // string token
-                Some(
-                    str_tok
-                    @
-                    Token {
-                        token_type: TokenType::StrLiteral(_),
-                        ..
-                    },
-                ) => Some(AstNode::new(
-                    Location::from_token(str_tok),
-                    Expression::StringLiteral(match &str_tok.token_type {
-                        TokenType::StrLiteral(val) => val.clone(),
-                        _ => unreachable!(),
-                    }),
-                )),
+            // string token
+            Some(
+                str_tok
+                @
+                Token {
+                    token_type: TokenType::StrLiteral(_),
+                    ..
+                },
+            ) => Some(AstNode::new(
+                Location::from_token(str_tok),
+                Expression::StringLiteral(match &str_tok.token_type {
+                    TokenType::StrLiteral(val) => val.clone(),
+                    _ => unreachable!(),
+                }),
+            )),
 
-                // number token
-                Some(
-                    num_tok
-                    @
-                    Token {
-                        token_type: TokenType::NumLiteral(_),
-                        ..
-                    },
-                ) => Some(AstNode::new(
-                    Location::from_token(num_tok),
-                    Expression::NumericLiteral(match &num_tok.token_type {
-                        TokenType::NumLiteral(val) => val.clone(),
-                        _ => unreachable!(),
-                    }),
-                )),
+            // number token
+            Some(
+                num_tok
+                @
+                Token {
+                    token_type: TokenType::NumLiteral(_),
+                    ..
+                },
+            ) => Some(AstNode::new(
+                Location::from_token(num_tok),
+                Expression::NumericLiteral(match &num_tok.token_type {
+                    TokenType::NumLiteral(val) => val.clone(),
+                    _ => unreachable!(),
+                }),
+            )),
 
-                // if its not any of those three, then it's not a literal expression and as such return `None`
-                _ => None,
-            }
+            // if its not any of those three, then it's not a literal expression and as such return `None`
+            _ => None,
         }
     }
 
     pub fn try_parse_assignment(tokens: TokenStream) -> Option<AstNode<Assignment>> {
-        if let Some(assignment_type) = try_parse_type(tokens) {
-            
-        }
-
+        if let Some(assignment_type) = try_parse_type(tokens) {};
+        todo!()
     }
 
     pub fn try_parse_type(tokens: TokenStream) -> Option<AstNode<Type>> {
-        let try_parse_primitive = |t: Token| -> Option<Type> {match t.token_type {
-            TokenType::KeywordBln => Some(Type::Primitive(PrimitiveType::Bln)),
-            TokenType::KeywordStr => Some(Type::Primitive(PrimitiveType::Str)),
-            TokenType::KeywordNum => Some(Type::Primitive(PrimitiveType::Num)),
-            TokenType::Keyword___ => Some(Type::Primitive(PrimitiveType::Emp)),
-            _ => return None,
-        }};
-        let iter = tokens.iter();
-        match iter.next() {
-            Some(tok) => Some(AstNode::new(Location::from_token(tok), try_parse_primitive(tok))),
-            None => None,
+        fn try_parse_primitive(t: Token) -> Option<Type> {
+            match t.token_type {
+                TokenType::KeywordBln => Some(Type::Primitive(PrimitiveType::Bln)),
+                TokenType::KeywordStr => Some(Type::Primitive(PrimitiveType::Str)),
+                TokenType::KeywordNum => Some(Type::Primitive(PrimitiveType::Num)),
+                TokenType::Keyword___ => Some(Type::Primitive(PrimitiveType::Emp)),
+                _ => return None,
+            }
+        };
+
+        fn try_parse_complex(tokens: TokenStream) -> Option<AstNode<Type>> {
+            if let ident
+            @
+            Some(Token {
+                token_type: TokenType::Identifier(_),
+                ..
+            }) = tokens.next()
+            {
+                if let colon
+                @
+                Some(Token {
+                    token_type: TokenType::Colon,
+                    ..
+                }) = tokens.next()
+                {
+                    if let  =  {
+                        
+                    }
+                }
+            }
+            todo!()
         }
+        // match tokens.next() {
+        //     Some(tok) => Some(AstNode::new(
+        //         Location::from_token(tok),
+        //         try_parse_primitive(tok),
+        //     )),
+        //     None => None,
+        // }
     }
 }

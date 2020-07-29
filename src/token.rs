@@ -120,7 +120,7 @@ pub enum TokenType {
     /// @
     /// ```
     Group,
-    Variable(String),
+    Identifier(String),
     /// ### Examples
     /// ```hmm
     /// ,
@@ -183,7 +183,7 @@ impl std::fmt::Display for TokenType {
 
                 TokenType::Colon => ":".to_string(),
                 TokenType::Group => "@".to_string(),
-                TokenType::Variable(val) => val.to_string(),
+                TokenType::Identifier(val) => val.to_string(),
                 TokenType::Comma => ",".to_string(),
                 TokenType::SemiColon => ";".to_string(),
             }
@@ -299,7 +299,7 @@ impl Tokenizer {
         tokens.push(Token::new(
             self.keywords
                 .get(token)
-                .unwrap_or(&TokenType::Variable(token.to_string()))
+                .unwrap_or(&TokenType::Identifier(token.to_string()))
                 .clone(),
             (location.0, location.1 - token.len()),
             location,
@@ -541,7 +541,7 @@ impl Tokenizer {
             .iter()
             .map(|tok| Token {
                 token_type: match &tok.token_type {
-                    TokenType::Variable(val) => {
+                    TokenType::Identifier(val) => {
                         if val.split('.').all(|t| t.chars().all(|c| c.is_numeric())) {
                             TokenType::NumLiteral(val.parse::<f64>().unwrap())
                         } else {
