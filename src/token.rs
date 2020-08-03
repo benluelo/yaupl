@@ -228,12 +228,9 @@ pub struct Tokenizer {
 }
 
 impl Tokenizer {
-    pub fn new(file_name: String) -> Self {
+    pub fn from_string(string: &str) -> Self {
         Tokenizer {
-            file: std::fs::read_to_string(file_name)
-                .unwrap()
-                .chars()
-                .collect(),
+            file: string.chars().collect(),
             keywords: {
                 let mut map: std::collections::HashMap<&'static str, TokenType> =
                     std::collections::HashMap::new();
@@ -271,9 +268,13 @@ impl Tokenizer {
                 map.insert("!!#[", TokenType::DocCommentOpen);
                 map.insert("]#", TokenType::CommentClose);
                 map.insert(",", TokenType::Comma);
+                map.insert(":", TokenType::Colon);
                 map
             },
         }
+    }
+    pub fn new(file_name: String) -> Self {
+        Tokenizer::from_string(&std::fs::read_to_string(file_name).unwrap())
     }
 
     fn peak(&self, ptr: &usize, distance: usize) -> Option<&char> {
@@ -295,14 +296,14 @@ impl Tokenizer {
         if token.trim().is_empty() {
             panic!("blank token");
         }
-        println!(" --> {}, {:?}", token.len(), location);
+        println!(" --> {:?}, {:?}", token.len(), location);
         tokens.push(Token::new(
             self.keywords
                 .get(token)
                 .unwrap_or(&TokenType::Identifier(token.to_string()))
                 .clone(),
-            (location.0, location.1 - token.len()),
-            location,
+            dbg!(location.0, location.1 - (token.len())),
+            dbg!(location),
         ))
     }
 
@@ -310,8 +311,8 @@ impl Tokenizer {
         let mut tokens: Vec<Token> = vec![];
         let mut current_token: String = String::new();
 
-        let mut row = 0usize;
-        let mut col = 0usize;
+        let mut row = 1usize;
+        let mut col = 1usize;
         let mut in_string: bool = false;
         let mut in_comment: bool = false;
         let mut ptr = 0usize;
@@ -449,6 +450,19 @@ impl Tokenizer {
                 }
 
                 '[' | '{' | '}' | '@' => {
+                    if in_comment {
+                    } else if in_string {
+                        current_token.push(*c);
+                    } else {
+                        if current_token.len() > 0 {
+                            self.add_token(&mut tokens, &current_token, (row, col));
+                        }
+                        self.add_token(&mut tokens, &c.to_string(), (row, col));
+                        current_token.clear();
+                    }
+                }
+
+                ':' => {
                     if in_comment {
                     } else if in_string {
                         current_token.push(*c);

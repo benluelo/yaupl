@@ -1,13 +1,15 @@
 pub mod defs {
     use crate::token::*;
+    use std::collections::HashMap;
+    use std::convert::From;
 
-    #[derive(Debug)]
+    #[derive(Debug, Eq, Hash, PartialEq, std::cmp::Ord, std::cmp::PartialOrd, Copy, Clone)]
     pub struct Position {
         pub row: usize,
         pub col: usize,
     }
 
-    impl std::convert::From<(usize, usize)> for Position {
+    impl From<(usize, usize)> for Position {
         fn from(val: (usize, usize)) -> Self {
             Position {
                 row: val.0,
@@ -25,10 +27,19 @@ pub mod defs {
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Eq, Hash, PartialEq, std::cmp::Ord, std::cmp::PartialOrd, Copy, Clone)]
     pub struct Location {
         pub start: Position,
         pub end: Position,
+    }
+
+    impl From<((usize, usize), (usize, usize))> for Location {
+        fn from(tuple: ((usize, usize), (usize, usize))) -> Self {
+            Location {
+                start: tuple.0.into(),
+                end: tuple.1.into(),
+            }
+        }
     }
 
     impl Location {
@@ -60,7 +71,7 @@ pub mod defs {
     pub struct FunctionDefinition {
         pub return_type: AstNode<Type>,
         pub name: AstNode<Identifier>,
-        pub parameters: AstNode<std::collections::HashMap<String, Type>>,
+        pub parameters: AstNode<HashMap<AstNode<Identifier>, AstNode<Type>>>,
         pub body: FunctionBody,
     }
 
@@ -70,7 +81,7 @@ pub mod defs {
         pub return_statement: AstNode<Box<TopLevel>>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Eq, Hash, PartialEq, std::cmp::Ord, std::cmp::PartialOrd)]
     pub struct AstNode<T> {
         pub location: Location,
         pub body: T,
@@ -79,6 +90,26 @@ pub mod defs {
     impl<T> AstNode<T> {
         pub fn new(location: Location, body: T) -> Self {
             Self { location, body }
+        }
+
+        pub fn boxed(self) -> AstNode<Box<T>> {
+            AstNode {
+                location: self.location,
+                body: Box::new(self.body),
+            }
+        }
+    }
+
+    pub trait FromToken {
+        fn from_token(token: &Token) -> Self;
+    }
+
+    impl<T: FromToken> FromToken for AstNode<T> {
+        fn from_token(token: &Token) -> AstNode<T> {
+            AstNode {
+                body: T::from_token(token),
+                location: Location::from_token(&token),
+            }
         }
     }
 
@@ -100,7 +131,7 @@ pub mod defs {
         value: AstNode<Expression>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Eq, PartialEq)]
     pub enum PrimitiveType {
         Str,
         Bln,
@@ -108,7 +139,19 @@ pub mod defs {
         Emp,
     }
 
-    #[derive(Debug)]
+    impl FromToken for PrimitiveType {
+        fn from_token(tok: &Token) -> Self {
+            match tok.token_type {
+                TokenType::KeywordStr => PrimitiveType::Str,
+                TokenType::KeywordBln => PrimitiveType::Bln,
+                TokenType::KeywordNum => PrimitiveType::Num,
+                TokenType::KeywordEmp => PrimitiveType::Emp,
+                _ => panic!("Invalid conversion."),
+            }
+        }
+    }
+
+    #[derive(Debug, Eq, PartialEq)]
     pub enum Type {
         /// ### Examples
         /// ```hmm
@@ -124,15 +167,29 @@ pub mod defs {
         /// ```hmm
         /// [a: str, b: bln@, c: [num, bln]=>___]
         /// ```
-        Complex(std::collections::HashMap<String, Type>),
+        Complex(HashMap<AstNode<Identifier>, AstNode<Type>>),
         /// ### Examples
         /// ```hmm
         /// [num, bln]=>___
         /// ```
         Function {
-            parameters: Vec<Type>,
-            return_type: Box<Type>,
+            parameters: AstNode<Vec<AstNode<Type>>>,
+            return_type: Box<AstNode<Type>>,
         },
+    }
+    impl FromToken for Type {
+        fn from_token(tok: &Token) -> Self {
+            match tok.token_type {
+                TokenType::KeywordStr => Type::Primitive(PrimitiveType::Str),
+                TokenType::KeywordBln => Type::Primitive(PrimitiveType::Bln),
+                TokenType::KeywordNum => Type::Primitive(PrimitiveType::Num),
+                TokenType::Keyword___ => Type::Primitive(PrimitiveType::Emp),
+                _ => panic!(
+                    "Invalid conversion: {:?} cannot be converted to a PrimitiveType.",
+                    tok.token_type
+                ),
+            }
+        }
     }
 
     #[derive(Debug)]
@@ -162,7 +219,7 @@ pub mod defs {
         },
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Eq, Hash, PartialEq, std::cmp::Ord, std::cmp::PartialOrd)]
     pub struct Identifier(String);
 
     impl Identifier {
@@ -171,13 +228,144 @@ pub mod defs {
         }
     }
 
-    pub type TokenStream<'token> = &'token mut core::slice::Iter<'token, Token>;
+    impl FromToken for Identifier {
+        fn from_token(token: &Token) -> Self {
+            match token.token_type {
+                TokenType::Identifier(ref val) => Identifier(val.into()),
+                _ => panic!("Not an identifier."),
+            }
+        }
+    }
 }
 
 pub mod funcs {
+    #[cfg(test)]
+    mod test_funcs {
+        use super::*;
+
+        #[test]
+        fn test_primitive_type() {
+            let primitive = "str";
+            let tokens = Tokenizer::from_string(primitive).tokenize();
+            let result = try_parse_type(&mut tokens.iter());
+            assert!(matches!(
+                dbg!(&result),
+                Some(AstNode {
+                    location: Location {
+                        start: Position { row: 1, col: 1 },
+                        end: Position { row: 1, col: 4 },
+                    },
+                    body: Type::Primitive(PrimitiveType::Str),
+                })
+            ));
+        }
+
+        #[test]
+        fn test_function_type() {
+            // test function types
+            const FUNCTION: &str = "[bln, num]=>___";
+            let tokens = Tokenizer::from_string(FUNCTION).tokenize();
+            let result = try_parse_type(&mut tokens.iter());
+            let expected = Some(AstNode {
+                location: ((1, 0), (1, 16)).into(),
+                body: Type::Function {
+                    parameters: AstNode {
+                        location: ((1, 2), (1, 10)).into(),
+                        body: vec![
+                            AstNode {
+                                location: ((1, 2), (1, 5)).into(),
+                                body: Type::Primitive(PrimitiveType::Bln),
+                            },
+                            AstNode {
+                                location: ((1, 7), (1, 10)).into(),
+                                body: Type::Primitive(PrimitiveType::Num),
+                            },
+                        ],
+                    },
+
+                    return_type: Box::new(AstNode {
+                        location: ((1, 13), (1, 16)).into(),
+                        body: Type::Primitive(PrimitiveType::Emp),
+                    }),
+                },
+            });
+            assert!(dbg!(result) == dbg!(expected));
+        }
+
+        #[test]
+        fn test_function_type_nested() {
+            // test function types
+            const FUNCTION_NESTED: &str = "[bln, num]=>[str, num]=>[str, bln]=>str";
+            let tokens = Tokenizer::from_string(FUNCTION_NESTED).tokenize();
+            let result = try_parse_type(&mut tokens.iter());
+            assert!(dbg!(result).is_some());
+        }
+
+        #[test]
+        fn test_complex_type() {
+            // test complex types
+            const COMPLEX: &str = "[a: num, b: bln, c: str]";
+            let tokens = Tokenizer::from_string(COMPLEX).tokenize();
+            let result = try_parse_type(&mut tokens.iter());
+            // dbg!(&result);
+            assert!(result.is_some());
+            // assert!(matches!(
+            //     result,
+            //     Some(AstNode {
+            //         location:
+            //             Location {
+            //                 start: Position { row: 1, col: 1 },
+            //                 end: Position { row: 1, col: 4 },
+            //             },
+            //         ..
+            //     })
+            // ));
+        }
+
+        #[test]
+        fn test_group_type_simple() {
+            // test group types
+            const GROUP: &str = "num@";
+            let tokens = Tokenizer::from_string(GROUP).tokenize();
+            let result = try_parse_type(&mut tokens.iter());
+            // dbg!(&result);
+            assert!(result.is_some());
+        }
+
+        #[test]
+        fn test_type_nested() {
+            // test group types
+            const NESTED: &str = "[a: [num]=>num@, b: bln, c: [d: str, e: ___]]@";
+            let tokens = Tokenizer::from_string(NESTED).tokenize();
+            let result = try_parse_type(&mut tokens.iter());
+            // dbg!(&result);
+            assert!(result.is_some());
+        }
+
+        #[test]
+        fn test_group_type_nested() {
+            // test group types
+            const GROUP: &str = "num@@@@@";
+            let tokens = Tokenizer::from_string(GROUP).tokenize();
+            let result = try_parse_type(&mut tokens.iter());
+            // dbg!(&result);
+            assert!(result.is_some());
+        }
+
+        #[test]
+        fn test_complex_type_nested() {
+            // test group types
+            const COMPLEX_NESTED: &str = "[c: [d: str, e: ___]]";
+            let tokens = Tokenizer::from_string(COMPLEX_NESTED).tokenize();
+            let result = try_parse_type(&mut tokens.iter());
+            // dbg!(&result);
+            assert!(result.is_some());
+        }
+    }
     use super::defs::*;
     use crate::token::*;
-    pub fn match_with(tokens: TokenStream) -> AstNode<WithStatement> {
+    use core::slice::Iter;
+    pub fn match_with(tokens: &mut Iter<Token>) -> AstNode<WithStatement> {
         dbg!(&tokens);
         if let (
             kw_with
@@ -240,9 +428,9 @@ pub mod funcs {
         }
     }
 
-    pub fn match_export(tokens: TokenStream) -> AstNode<ExportStatement> {
+    pub fn match_export(tokens: &mut Iter<Token>) -> AstNode<ExportStatement> {
         if let Some(
-            kw_export
+            _kw_export
             @
             Token {
                 token_type: TokenType::KeywordExport,
@@ -257,7 +445,7 @@ pub mod funcs {
             }) = tokens.next()
             {
                 if let Some(
-                    block_start
+                    _block_start
                     @
                     Token {
                         token_type: TokenType::BraceCurlyOpen,
@@ -265,11 +453,14 @@ pub mod funcs {
                     },
                 ) = tokens.next()
                 {
-                    let mut body: Vec<AstNode<TopLevel>> = vec![];
-                    loop {
+                    let _body: Vec<AstNode<TopLevel>> = vec![];
+                    fn top_level(
+                        tokens: &mut Iter<Token>,
+                        mut body: Vec<AstNode<TopLevel>>,
+                    ) -> Vec<AstNode<TopLevel>> {
                         // build a stream containing all the tokens until a comma, then try to parse an expression out of that.
-                        let mut expression_stream = {
-                            let mut temp_stream: Vec<Token> = vec![];
+                        let mut temp_stream: Vec<Token> = vec![];
+                        {
                             let mut depth = 0;
                             while let Some(tok) = tokens.next() {
                                 // on `{` increase depth
@@ -280,9 +471,8 @@ pub mod funcs {
                                 {
                                     depth += 1
                                 }
-
                                 // on `}` decrease depth
-                                if let Token {
+                                else if let Token {
                                     token_type: TokenType::BraceCurlyClose,
                                     ..
                                 } = tok
@@ -296,9 +486,8 @@ pub mod funcs {
                                         depth -= 1
                                     }
                                 }
-
                                 // on `,` check if depth is zero, if it is then break else add the `,` to the tokens
-                                if let Token {
+                                else if let Token {
                                     token_type: TokenType::Comma,
                                     ..
                                 } = tok
@@ -308,19 +497,24 @@ pub mod funcs {
                                     } else {
                                         temp_stream.push(tok.clone());
                                     }
+                                } else {
+                                    temp_stream.push(tok.clone());
                                 }
                             }
-                            temp_stream.iter()
-                        };
+                        }
+                        let expression_stream = temp_stream.iter();
 
-                        // first, try to parse a literal expression (`1`, `"hi"`, `true`)
-                        if let Some(lit_val) = try_parse_literal(&mut expression_stream) {
+                        // first, try to parse a literal expression (`1`, `"hi"`, `true`, `___`)
+                        if let Some(lit_val) = try_parse_literal(&mut expression_stream.clone()) {
                             body.push(AstNode::new(
                                 lit_val.location,
                                 TopLevel::Expression(lit_val.body),
-                            ))
-                        } else if let Some(lit_val) = try_parse_literal(&mut expression_stream) {
+                            ));
+                        // body;
+                        } else {
+                            todo!()
                         }
+                        todo!();
                     }
                 }
             }
@@ -328,7 +522,7 @@ pub mod funcs {
         todo!();
     }
 
-    pub fn try_parse_literal<'tok>(tokens: TokenStream) -> Option<AstNode<Expression>> {
+    pub fn try_parse_literal<'tok>(tokens: &mut Iter<Token>) -> Option<AstNode<Expression>> {
         match tokens.next() {
             // bolean token
             Some(
@@ -383,50 +577,278 @@ pub mod funcs {
         }
     }
 
-    pub fn try_parse_assignment(tokens: TokenStream) -> Option<AstNode<Assignment>> {
-        if let Some(assignment_type) = try_parse_type(tokens) {};
+    pub fn try_parse_assignment(tokens: &mut Iter<Token>) -> Option<AstNode<Assignment>> {
+        if let Some(_assignment_type) = try_parse_type(tokens) {};
         todo!()
     }
 
-    pub fn try_parse_type(tokens: TokenStream) -> Option<AstNode<Type>> {
-        fn try_parse_primitive(t: Token) -> Option<Type> {
-            match t.token_type {
-                TokenType::KeywordBln => Some(Type::Primitive(PrimitiveType::Bln)),
-                TokenType::KeywordStr => Some(Type::Primitive(PrimitiveType::Str)),
-                TokenType::KeywordNum => Some(Type::Primitive(PrimitiveType::Num)),
-                TokenType::Keyword___ => Some(Type::Primitive(PrimitiveType::Emp)),
-                _ => return None,
+    pub fn try_parse_type<'parse_type>(
+        tokens: &mut Iter<'parse_type, Token>,
+    ) -> Option<AstNode<Type>> {
+        /// tries to parse the primitive out of the stream.
+        fn try_parse_primitive<'parse_prim>(
+            tokens: &mut Iter<'parse_prim, Token>,
+        ) -> Option<AstNode<Type>> {
+            match tokens.next() {
+                Some(tok) => match tok.token_type {
+                    TokenType::KeywordBln
+                    | TokenType::KeywordStr
+                    | TokenType::KeywordNum
+                    | TokenType::Keyword___ => Some(AstNode::from_token(tok)),
+                    _ => return None,
+                },
+                None => None,
             }
         };
 
-        fn try_parse_complex(tokens: TokenStream) -> Option<AstNode<Type>> {
-            if let ident
-            @
-            Some(Token {
-                token_type: TokenType::Identifier(_),
-                ..
-            }) = tokens.next()
-            {
-                if let colon
-                @
-                Some(Token {
-                    token_type: TokenType::Colon,
-                    ..
-                }) = tokens.next()
+        fn try_parse_complex<'parse_comp>(
+            tokens: &mut Iter<'parse_comp, Token>,
+        ) -> Option<AstNode<Type>> {
+            let mut temp_typemap: std::collections::BTreeMap<AstNode<Identifier>, AstNode<Type>> =
+                std::collections::BTreeMap::new();
+            fn complex(
+                toks: &mut Iter<Token>,
+                tm: &mut std::collections::BTreeMap<AstNode<Identifier>, AstNode<Type>>,
+            ) -> Option<()> {
+                let ident = if let Some(
+                    ident_tok
+                    @
+                    Token {
+                        token_type: TokenType::Identifier(_),
+                        ..
+                    },
+                ) = toks.next()
                 {
-                    if let  =  {
-                        
+                    ident_tok.clone()
+                } else {
+                    return None;
+                };
+                let _colon = if let Some(
+                    colon_tok
+                    @
+                    Token {
+                        token_type: TokenType::Colon,
+                        ..
+                    },
+                ) = toks.next()
+                {
+                    colon_tok.clone()
+                } else {
+                    return None;
+                };
+                let param_type = if let Some(_type) = try_parse_type(toks) {
+                    _type
+                } else {
+                    return None;
+                };
+
+                // got full `ident: type` format, check for a comma
+                // if a comma is found, call complex again
+                // else, return the AstNode<Type>
+
+                // first, add current found type to a hashmap
+                tm.insert(AstNode::from_token(&ident), param_type);
+
+                let temp = toks.next();
+                let last = match temp {
+                    Some(
+                        _comma
+                        @
+                        Token {
+                            token_type: TokenType::Comma,
+                            ..
+                        },
+                    ) => complex(toks, tm),
+                    _ => Some(()),
+                };
+
+                return last;
+            }
+
+            let first_token: Position = if let Some(
+                first
+                @
+                Token {
+                    token_type: TokenType::BraceSquareOpen,
+                    ..
+                },
+            ) = tokens.next()
+            {
+                first.location_start.into()
+            } else {
+                return None;
+            };
+            match complex(tokens, &mut temp_typemap) {
+                Some(_) => {
+                    let first = if let Some(first) = temp_typemap.iter().next() {
+                        first.0.location.start
+                    } else {
+                        return None;
+                    };
+                    let last = if let Some(last) = temp_typemap.iter().next_back() {
+                        last.1.location.end
+                    } else {
+                        return None;
+                    };
+                    let hm = temp_typemap.into_iter().collect();
+                    Some(AstNode::new(
+                        Location {
+                            start: first,
+                            end: last,
+                        },
+                        Type::Complex(hm),
+                    ))
+                }
+                None => None,
+            }
+        }
+
+        fn try_parse_function<'parse_func>(
+            tokens: &mut Iter<'parse_func, Token>,
+        ) -> Option<AstNode<Type>> {
+            dbg!(&tokens);
+            let params = vec![];
+            fn function<'func>(
+                tokens: &mut Iter<'func, Token>,
+                mut params: Vec<AstNode<Type>>,
+            ) -> Option<Vec<AstNode<Type>>> {
+                dbg!(&params);
+                // get a type
+                if let Some(param_type) = try_parse_type(tokens) {
+                    println!("found a type: {:#?}", param_type);
+                    params.push(param_type);
+                } else {
+                    println!("found none");
+                    return None;
+                };
+
+                // check for either a `,` or a `]`; anything else is invalid
+                match tokens.next() {
+                    Some(
+                        _comma
+                        @
+                        Token {
+                            token_type: TokenType::Comma,
+                            ..
+                        },
+                    ) => {
+                        println!("found a comma");
+                        function(tokens, params)
                     }
+                    Some(
+                        _brace_close
+                        @
+                        Token {
+                            token_type: TokenType::BraceSquareClose,
+                            ..
+                        },
+                    ) => Some(params),
+                    Some(invalid) => panic!(
+                        "Invalid token {} at {}, {}",
+                        invalid.token_type, invalid.location_start.0, invalid.location_start.1
+                    ),
+                    None => return None,
                 }
             }
-            todo!()
+
+            let first_token: Position = if let Some(
+                first
+                @
+                Token {
+                    token_type: TokenType::BraceSquareOpen,
+                    ..
+                },
+            ) = tokens.next()
+            {
+                dbg!(&first);
+                dbg!(Location::from_token(&first).start)
+            } else {
+                return None;
+            };
+            let res = function(tokens, params);
+            match res {
+                Some(params) => {
+                    if let Some(_arrow) = tokens.next() {
+                        if let Some(return_type) = try_parse_type(tokens) {
+                            let start = params.first().unwrap().location.start;
+                            let params_end = params.last().unwrap().location.end;
+                            let end = return_type.location.end;
+
+                            Some(AstNode::new(
+                                Location {
+                                    start: first_token,
+                                    end,
+                                },
+                                Type::Function {
+                                    parameters: AstNode {
+                                        location: Location {
+                                            start,
+                                            end: params_end,
+                                        },
+                                        body: params,
+                                    },
+                                    return_type: Box::new(return_type),
+                                },
+                            ))
+                        } else {
+                            None
+                        }
+                    } else {
+                        panic!("Expected token ArrowThick")
+                    }
+                }
+                None => None,
+            }
         }
-        // match tokens.next() {
-        //     Some(tok) => Some(AstNode::new(
-        //         Location::from_token(tok),
-        //         try_parse_primitive(tok),
-        //     )),
-        //     None => None,
-        // }
+
+        /// TODO: refactor to not use an `Option` since there is no use case for `None`
+        fn try_parse_group<'parse_group>(
+            tokens: &mut Iter<'parse_group, Token>,
+            found_type: AstNode<Type>,
+        ) -> Option<AstNode<Type>> {
+            println!("looking for a group");
+            dbg!(&tokens);
+            let mut tokens_peekable = tokens.clone().peekable();
+
+            let peeked = if let Some(
+                _peeked
+                @
+                &&Token {
+                    token_type: TokenType::Group,
+                    ..
+                },
+            ) = tokens_peekable.peek()
+            {
+                println!("found a group sigil");
+                _peeked.location_end
+            } else {
+                return Some(found_type);
+            };
+            tokens.next();
+            try_parse_group(
+                tokens,
+                AstNode {
+                    location: Location {
+                        start: found_type.location.start,
+                        end: peeked.into(),
+                    },
+                    body: Type::Group(found_type.boxed()),
+                },
+            )
+        }
+
+        if let Some(found_type) = if let Some(_) = try_parse_primitive(&mut tokens.clone()) {
+            try_parse_primitive(tokens)
+        } else if let Some(_) = try_parse_complex(&mut tokens.clone()) {
+            try_parse_complex(tokens)
+        } else if let Some(_) = try_parse_function(&mut tokens.clone()) {
+            try_parse_function(tokens)
+        } else {
+            None
+        } {
+            try_parse_group(tokens, found_type)
+        } else {
+            None
+        }
     }
 }
