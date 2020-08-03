@@ -365,6 +365,13 @@ pub mod funcs {
     use super::defs::*;
     use crate::token::*;
     use core::slice::Iter;
+    ///
+    ///
+    /// # Arguments
+    ///
+    ///
+    /// # Returns
+    ///
     pub fn match_with(tokens: &mut Iter<Token>) -> AstNode<WithStatement> {
         dbg!(&tokens);
         if let (
@@ -428,6 +435,13 @@ pub mod funcs {
         }
     }
 
+    ///
+    ///
+    /// # Arguments
+    ///
+    ///
+    /// # Returns
+    ///
     pub fn match_export(tokens: &mut Iter<Token>) -> AstNode<ExportStatement> {
         if let Some(
             _kw_export
@@ -522,6 +536,13 @@ pub mod funcs {
         todo!();
     }
 
+    ///
+    ///
+    /// # Arguments
+    ///
+    ///
+    /// # Returns
+    ///
     pub fn try_parse_literal<'tok>(tokens: &mut Iter<Token>) -> Option<AstNode<Expression>> {
         match tokens.next() {
             // bolean token
@@ -577,15 +598,45 @@ pub mod funcs {
         }
     }
 
+    ///
+    ///
+    /// # Arguments
+    ///
+    ///
+    /// # Returns
+    ///
     pub fn try_parse_assignment(tokens: &mut Iter<Token>) -> Option<AstNode<Assignment>> {
         if let Some(_assignment_type) = try_parse_type(tokens) {};
         todo!()
     }
 
+    /// Tries to parse a type out of the stream.
+    /// ```hmm
+    /// str some_str <- "hello",
+    /// ^^^
+    /// ```
+    ///
+    /// # Arguments
+    /// - `tokens`: The iterator containing the tokens.
+    ///
+    /// # Returns
+    /// An `Option<AstNode<Type>>`, containing the type if it was found.
+    ///
     pub fn try_parse_type<'parse_type>(
         tokens: &mut Iter<'parse_type, Token>,
     ) -> Option<AstNode<Type>> {
-        /// tries to parse the primitive out of the stream.
+        /// Tries to parse a primitive value out of the stream.
+        /// ```hmm
+        /// str some_str <- "hello",
+        /// ^^^
+        /// ```
+        ///
+        /// # Arguments
+        /// - `tokens`: The iterator containing the tokens.
+        ///
+        /// # Returns
+        /// An `Option<AstNode<Type>>`, containing the type if it was found.
+        ///
         fn try_parse_primitive<'parse_prim>(
             tokens: &mut Iter<'parse_prim, Token>,
         ) -> Option<AstNode<Type>> {
@@ -601,15 +652,52 @@ pub mod funcs {
             }
         };
 
+        /// Tries to parse a complex value out of the stream.
+        /// ```hmm
+        /// [a: str, b: num] some_str <- (|-
+        /// ^^^^^^^^^^^^^^^^
+        ///     a: "hello",
+        ///     b: 42
+        /// -|),
+        /// ```
+        ///
+        /// # Arguments
+        /// - `tokens`: The iterator containing the tokens.
+        ///
+        /// # Returns
+        /// An `Option<AstNode<Type>>`, containing the type if it was found.
+        ///
         fn try_parse_complex<'parse_comp>(
             tokens: &mut Iter<'parse_comp, Token>,
         ) -> Option<AstNode<Type>> {
             let mut temp_typemap: std::collections::BTreeMap<AstNode<Identifier>, AstNode<Type>> =
                 std::collections::BTreeMap::new();
+
+            /// This matches the `identifier: type` syntax. It takes in a mutable reference to both the token stream and a BTree.
+            ///
+            /// This function doesn't return anything, it merely has side effects.
+            ///
+            /// ```hmm
+            /// [a: str, b: num] some_str <- (|-
+            ///  ^^^^^^  ^^^^^^
+            ///     a: "hello",
+            ///     b: 42
+            /// -|),
+            /// ```
+            ///
+            /// # Arguments
+            /// - toks: The token stream.
+            /// - tm: The BTree to put the found types in.
+            ///
+            /// # Returns
+            /// `Option<()>`<br/>
+            /// `Some(())` means the function was successful and a type was found,
+            /// `None` means it was not and no type was found.
             fn complex(
                 toks: &mut Iter<Token>,
                 tm: &mut std::collections::BTreeMap<AstNode<Identifier>, AstNode<Type>>,
             ) -> Option<()> {
+                // get an identifier
                 let ident = if let Some(
                     ident_tok
                     @
@@ -623,6 +711,8 @@ pub mod funcs {
                 } else {
                     return None;
                 };
+
+                // get a colon
                 let _colon = if let Some(
                     colon_tok
                     @
@@ -636,6 +726,8 @@ pub mod funcs {
                 } else {
                     return None;
                 };
+
+                // get the type
                 let param_type = if let Some(_type) = try_parse_type(toks) {
                     _type
                 } else {
@@ -646,11 +738,11 @@ pub mod funcs {
                 // if a comma is found, call complex again
                 // else, return the AstNode<Type>
 
-                // first, add current found type to a hashmap
+                // first, add current found type to a BTree (not a hashmap, so it stays ordered)
                 tm.insert(AstNode::from_token(&ident), param_type);
 
-                let temp = toks.next();
-                let last = match temp {
+                return match toks.next() {
+                    // if a comma is found, call complex again
                     Some(
                         _comma
                         @
@@ -659,12 +751,23 @@ pub mod funcs {
                             ..
                         },
                     ) => complex(toks, tm),
-                    _ => Some(()),
-                };
 
-                return last;
+                    // if a clsing square bracket is found, the type is finished and return Some(())
+                    Some(
+                        _close_bracket
+                        @
+                        Token {
+                            token_type: TokenType::BraceSquareClose,
+                            ..
+                        },
+                    ) => Some(()),
+
+                    // anything else is an invalid token, return None
+                    _ => None,
+                };
             }
 
+            // TODO: figure out where this is supposed to be used
             let first_token: Position = if let Some(
                 first
                 @
@@ -703,11 +806,48 @@ pub mod funcs {
             }
         }
 
+        /// Tries to parse a function value out of the stream.
+        /// ```hmm
+        /// bln some_function [a: str, b: num] -> {
+        ///     #[ some stuff happens here... ]#
+        ///     return true,
+        /// },
+        ///
+        /// [str, num]=>bln  some_str <- some_function,
+        /// ^^^^^^^^^^^^^^^
+        /// ```
+        ///
+        /// # Arguments
+        /// - `tokens`: The iterator containing the tokens.
+        ///
+        /// # Returns
+        /// An `Option<AstNode<Type>>`, containing the type if it was found.
+        ///
         fn try_parse_function<'parse_func>(
             tokens: &mut Iter<'parse_func, Token>,
         ) -> Option<AstNode<Type>> {
             dbg!(&tokens);
             let params = vec![];
+            /// This matches the `[type(, type)*]` syntax.
+            ///
+            /// This function doesn't return anything, it merely has side effects.
+            ///
+            /// ```hmm
+            /// [str, num]=>bln some_str [a: str, b: num] -> {
+            /// ^^^^^^^^^^
+            ///     #[ some stuff happens here... ]#
+            ///     return true,
+            /// }
+            /// ```
+            ///
+            /// # Arguments
+            /// - toks: The token stream.
+            /// - params: The Vec to put the found types in.
+            ///
+            /// # Returns
+            /// `Option<Vec<AstNode<Type>>>`<br/>
+            /// `Some` means the function was successful and a type was found,
+            /// `None` means it was not and no type was found.
             fn function<'func>(
                 tokens: &mut Iter<'func, Token>,
                 mut params: Vec<AstNode<Type>>,
@@ -744,7 +884,7 @@ pub mod funcs {
                         },
                     ) => Some(params),
                     Some(invalid) => panic!(
-                        "Invalid token {} at {}, {}",
+                        "Unexpected token {} at {}, {}",
                         invalid.token_type, invalid.location_start.0, invalid.location_start.1
                     ),
                     None => return None,
