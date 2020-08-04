@@ -572,22 +572,33 @@ impl Tokenizer {
     pub fn print(tokens: &Vec<Token>) -> String {
         let mut final_string = String::new();
         let mut indent = 0;
+        let mut new_line: bool = false;
         for tok in tokens.iter() {
             match tok.token_type {
-                TokenType::BraceCurlyOpen => {
+                TokenType::BraceCurlyOpen | TokenType::BraceSquareOpen => {
                     final_string
                         .push_str(format!("{}{}\n", "\t".repeat(indent), tok.token_type).as_str());
-                    final_string.push('\n');
-                    indent += 1
+                    indent += 1;
+                    new_line = true;
                 }
-                TokenType::BraceCurlyClose => {
+                TokenType::BraceCurlyClose | TokenType::BraceSquareClose => {
                     indent -= 1;
                     final_string
-                        .push_str(format!("{}{}\n", "\t".repeat(indent), tok.token_type).as_str());
-                    final_string.push('\n')
+                        .push_str(format!("\n{}{}", "\t".repeat(indent), tok.token_type).as_str());
+                    final_string.push('\n');
+                    new_line = true;
                 }
-                _ => final_string
-                    .push_str(format!("{}{}\n", "\t".repeat(indent), tok.token_type).as_str()),
+                _ => {
+                    final_string.push_str(
+                        format!(
+                            "{}{} ",
+                            if new_line { "\t".repeat(indent) } else { String::new() },
+                            tok.token_type
+                        )
+                        .as_str(),
+                    );
+                    new_line = false;
+                }
             }
         }
         final_string

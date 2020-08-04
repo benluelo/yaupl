@@ -126,9 +126,9 @@ pub mod defs {
 
     #[derive(Debug)]
     pub struct Assignment {
-        ident_type: AstNode<Type>,
-        identifier: AstNode<Identifier>,
-        value: AstNode<Expression>,
+        pub ident_type: AstNode<Type>,
+        pub identifier: AstNode<Identifier>,
+        pub value: AstNode<Expression>,
     }
 
     #[derive(Debug, Eq, PartialEq)]
@@ -307,19 +307,7 @@ pub mod funcs {
             const COMPLEX: &str = "[a: num, b: bln, c: str]";
             let tokens = Tokenizer::from_string(COMPLEX).tokenize();
             let result = try_parse_type(&mut tokens.iter());
-            // dbg!(&result);
             assert!(result.is_some());
-            // assert!(matches!(
-            //     result,
-            //     Some(AstNode {
-            //         location:
-            //             Location {
-            //                 start: Position { row: 1, col: 1 },
-            //                 end: Position { row: 1, col: 4 },
-            //             },
-            //         ..
-            //     })
-            // ));
         }
 
         #[test]
@@ -365,13 +353,7 @@ pub mod funcs {
     use super::defs::*;
     use crate::token::*;
     use core::slice::Iter;
-    ///
-    ///
-    /// # Arguments
-    ///
-    ///
-    /// # Returns
-    ///
+
     pub fn match_with(tokens: &mut Iter<Token>) -> AstNode<WithStatement> {
         dbg!(&tokens);
         if let (
@@ -435,13 +417,6 @@ pub mod funcs {
         }
     }
 
-    ///
-    ///
-    /// # Arguments
-    ///
-    ///
-    /// # Returns
-    ///
     pub fn match_export(tokens: &mut Iter<Token>) -> AstNode<ExportStatement> {
         if let Some(
             _kw_export
@@ -536,16 +511,12 @@ pub mod funcs {
         todo!();
     }
 
-    ///
-    ///
-    /// # Arguments
-    ///
-    ///
-    /// # Returns
-    ///
+    pub fn try_parse_expression(tokens: &mut Iter<Token>) -> Option<AstNode<Expression>> {
+        todo!()
+    }
     pub fn try_parse_literal<'tok>(tokens: &mut Iter<Token>) -> Option<AstNode<Expression>> {
         match tokens.next() {
-            // bolean token
+            // boolean token
             Some(
                 bln_tok
                 @
@@ -598,16 +569,55 @@ pub mod funcs {
         }
     }
 
-    ///
-    ///
-    /// # Arguments
-    ///
-    ///
-    /// # Returns
-    ///
     pub fn try_parse_assignment(tokens: &mut Iter<Token>) -> Option<AstNode<Assignment>> {
-        if let Some(_assignment_type) = try_parse_type(tokens) {};
-        todo!()
+        let assignment_type = if let Some(_assignment_type) = try_parse_type(tokens) {
+            _assignment_type
+        } else {
+            return None;
+        };
+
+        let ident = if let Some(
+            ident
+            @
+            Token {
+                token_type: TokenType::Identifier(_),
+                ..
+            },
+        ) = tokens.next()
+        {
+            AstNode::from_token(ident)
+        } else {
+            return None;
+        };
+
+        let _arrow = if let Some(
+            _arrow
+            @
+            Token {
+                token_type: TokenType::ArrowRight,
+                ..
+            },
+        ) = tokens.next()
+        {
+            _arrow
+        } else {
+            return None;
+        };
+
+        let expr = if let Some(expression) = try_parse_expression(tokens) {
+            expression
+        } else {
+            return None;
+        };
+
+        Some(AstNode {
+            location: assignment_type.location,
+            body: Assignment {
+                identifier: ident,
+                ident_type: assignment_type,
+                value: expr,
+            },
+        })
     }
 
     /// Tries to parse a type out of the stream.

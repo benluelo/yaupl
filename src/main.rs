@@ -11,6 +11,4 @@ fn main() {
     let token_stream = Tokenizer::new(args[1].to_string()).tokenize();
 
     println!("{}", Tokenizer::print(&token_stream));
-
-    println!("{:#?}", match_with(&mut token_stream.iter()));
 }
