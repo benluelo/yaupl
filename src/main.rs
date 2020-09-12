@@ -1,9 +1,9 @@
+#![feature(or_patterns)]
+
 pub mod ast;
 pub mod token;
-pub mod temp;
 pub mod types;
 
-use ast::funcs::*;
 use token::*;
 
 fn main() {
@@ -11,5 +11,5 @@ fn main() {
 
     let token_stream = Tokenizer::new(args[1].to_string()).tokenize();
 
-    println!("{}", Tokenizer::print(&token_stream));
+    println!("{:#?}, {}", token_stream, Tokenizer::print(&token_stream));
 }

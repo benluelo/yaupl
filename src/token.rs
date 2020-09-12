@@ -1,3 +1,5 @@
+use std::{collections::HashMap, fmt::Display, fs::read_to_string};
+
 use colored::*;
 
 #[derive(Clone, Debug, std::cmp::PartialEq)]
@@ -16,7 +18,9 @@ pub enum TokenType {
     /// ```yaupl
     /// 71632
     /// ```
-    NumLiteral(f64),
+    NumLiteral(i128, u128),
+    Infinity,
+    NegativeInfinity,
     /// ### Examples
     /// ```yaupl
     /// true
@@ -54,12 +58,12 @@ pub enum TokenType {
     BraceGroupClose,
     /// ### Examples
     /// ```yaupl
-    /// -|)
+    /// -|
     /// ```
     TeslaOpen,
     /// ### Examples
     /// ```yaupl
-    /// (|-
+    /// |-
     /// ```
     TeslaClose,
     /// ### Examples
@@ -166,15 +170,15 @@ impl ToString for BinaryOperator {
             BinaryOperator::Div => "/".into(),
             BinaryOperator::Gt => ">".into(),
             BinaryOperator::Lt => "<".into(),
-            BinaryOperator::Gte => "<=".into(),
-            BinaryOperator::Lte => ">=".into(),
+            BinaryOperator::Gte => ">=".into(),
+            BinaryOperator::Lte => "<=".into(),
             BinaryOperator::Eq => "==".into(),
             BinaryOperator::Neq => "!=".into(),
         }
     }
 }
 
-impl std::fmt::Display for TokenType {
+impl Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -182,7 +186,13 @@ impl std::fmt::Display for TokenType {
             match &*self {
                 TokenType::BinaryOperator(val) => val.to_string(),
                 TokenType::StrLiteral(val) => format!("\"{}\"", val).green().to_string(),
-                TokenType::NumLiteral(val) => val.to_string().red().to_string(),
+                TokenType::NumLiteral(int, frac) => format!("{}.{:0>38}", int, frac)
+                    .trim_end_matches('0')
+                    .trim_end_matches('.')
+                    .red()
+                    .to_string(),
+                TokenType::Infinity => "oo".to_string().red().to_string(),
+                TokenType::NegativeInfinity => "-oo".to_string().red().to_string(),
                 TokenType::BlnLiteral(val) => val.to_string().red().to_string(),
                 TokenType::BraceSquareOpen => "[".to_string(),
                 TokenType::BraceSquareClose => "]".to_string(),
@@ -190,8 +200,8 @@ impl std::fmt::Display for TokenType {
                 TokenType::BraceCurlyClose => "}".to_string(),
                 TokenType::BraceGroupOpen => "(|".to_string(),
                 TokenType::BraceGroupClose => "|)".to_string(),
-                TokenType::TeslaOpen => "(|-".to_string(),
-                TokenType::TeslaClose => "-|)".to_string(),
+                TokenType::TeslaOpen => "|-".to_string(),
+                TokenType::TeslaClose => "-|".to_string(),
                 TokenType::ArrowLeft => "<-".to_string(),
                 TokenType::ArrowRight => "->".to_string(),
                 TokenType::ArrowRightThick => "=>".to_string(),
@@ -245,7 +255,7 @@ impl Token {
     }
 }
 
-impl std::fmt::Display for Token {
+impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -257,16 +267,21 @@ impl std::fmt::Display for Token {
 
 pub struct Tokenizer {
     pub file: Vec<char>,
-    pub keywords: std::collections::HashMap<&'static str, TokenType>,
+    pub keywords: HashMap<&'static str, TokenType>,
 }
 
+// macro_rules! add {
+//     ($s: ident, $c: ident, $e:expr) => {
+//         $s.add_token(&mut $t, $e, (row, col));
+//                         $c.clear();
+//     };
+// }
 impl Tokenizer {
     pub fn from_string(string: &str) -> Self {
         Tokenizer {
             file: string.chars().collect(),
             keywords: {
-                let mut map: std::collections::HashMap<&'static str, TokenType> =
-                    std::collections::HashMap::new();
+                let mut map: HashMap<&'static str, TokenType> = HashMap::new();
                 map.insert("export", TokenType::KeywordExport);
                 map.insert("with", TokenType::KeywordWith);
                 map.insert("as", TokenType::KeywordAs);
@@ -278,12 +293,18 @@ impl Tokenizer {
                 map.insert("str", TokenType::KeywordStr);
                 map.insert("bln", TokenType::KeywordBln);
                 map.insert("emp", TokenType::KeywordEmp);
+                map.insert("oo", TokenType::Infinity);
+                map.insert("-oo", TokenType::NegativeInfinity);
                 map.insert("+", TokenType::BinaryOperator(BinaryOperator::Add));
                 map.insert("-", TokenType::BinaryOperator(BinaryOperator::Sub));
                 map.insert("*", TokenType::BinaryOperator(BinaryOperator::Mul));
                 map.insert("/", TokenType::BinaryOperator(BinaryOperator::Div));
                 map.insert("==", TokenType::BinaryOperator(BinaryOperator::Eq));
                 map.insert("!=", TokenType::BinaryOperator(BinaryOperator::Neq));
+                map.insert(">", TokenType::BinaryOperator(BinaryOperator::Gt));
+                map.insert("<", TokenType::BinaryOperator(BinaryOperator::Lt));
+                map.insert(">=", TokenType::BinaryOperator(BinaryOperator::Gte));
+                map.insert("<=", TokenType::BinaryOperator(BinaryOperator::Lte));
                 map.insert("<-", TokenType::ArrowLeft);
                 map.insert("->", TokenType::ArrowRight);
                 map.insert("~>", TokenType::ArrowRightCurly);
@@ -295,8 +316,8 @@ impl Tokenizer {
                 map.insert("}", TokenType::BraceCurlyClose);
                 map.insert("(|", TokenType::BraceGroupOpen);
                 map.insert("|)", TokenType::BraceGroupClose);
-                map.insert("(|-", TokenType::TeslaOpen);
-                map.insert("-|)", TokenType::TeslaClose);
+                map.insert("|-", TokenType::TeslaOpen);
+                map.insert("-|", TokenType::TeslaClose);
                 map.insert("#[", TokenType::CommentOpen);
                 map.insert("!!#[", TokenType::DocCommentOpen);
                 map.insert("]#", TokenType::CommentClose);
@@ -307,7 +328,7 @@ impl Tokenizer {
         }
     }
     pub fn new(file_name: String) -> Self {
-        Tokenizer::from_string(&std::fs::read_to_string(file_name).unwrap())
+        Tokenizer::from_string(&read_to_string(file_name).unwrap())
     }
 
     fn peak(&self, ptr: &usize, distance: usize) -> Option<&char> {
@@ -335,9 +356,15 @@ impl Tokenizer {
                 .get(token)
                 .unwrap_or(&TokenType::Identifier(token.to_string()))
                 .clone(),
-            dbg!(location.0, location.1 - (token.len())),
-            dbg!(location),
+            (location.0, location.1 - (token.len())),
+            location,
         ))
+    }
+
+    /// adds the value of the token to the tokens, the clears the supplied token
+    fn add(&self, tokens: &mut Vec<Token>, token: &'_ mut String, location: (usize, usize)) {
+        self.add_token(tokens, &token, location);
+        token.clear();
     }
 
     pub fn tokenize(&mut self) -> Vec<Token> {
@@ -350,11 +377,13 @@ impl Tokenizer {
         let mut in_comment: bool = false;
         let mut ptr = 0usize;
         while let Some(c) = self.eat(&mut ptr) {
-            println!("c: {}", c);
-            println!("current_token: {}", current_token);
-            println!("in_comment: {}", in_comment);
-            println!("in_string: {}", in_string);
-            println!("row: {}, col: {}", row, col);
+            // println!("c: {}", c);
+            // println!("current_token: {}", current_token);
+            // println!("in_comment: {}", in_comment);
+            // println!("in_string: {}", in_string);
+            // println!("row: {}, col: {}", row, col);
+
+            // TODO: deal with comments
             match *c {
                 '\r' => {}
                 '\n' => {
@@ -363,8 +392,7 @@ impl Tokenizer {
                         panic!(format!("unterminated string literal at character {}.", ptr));
                     } else if current_token.len() > 0 {
                         println!("current: \"{}\"", current_token);
-                        self.add_token(&mut tokens, &current_token, (row, col));
-                        current_token.clear();
+                        self.add(&mut tokens, &mut current_token, (row, col));
                     }
                     row += 1;
                     col = 0;
@@ -374,8 +402,7 @@ impl Tokenizer {
                     } else if in_string {
                         current_token.push(*c);
                     } else if current_token.len() > 0 {
-                        self.add_token(&mut tokens, &current_token, (row, col));
-                        current_token.clear();
+                        self.add(&mut tokens, &mut current_token, (row, col));
                     }
                 }
                 ',' => {
@@ -384,32 +411,40 @@ impl Tokenizer {
                         current_token.push(*c);
                     } else {
                         if current_token.len() > 0 {
-                            self.add_token(&mut tokens, &current_token, (row, col));
+                            self.add(&mut tokens, &mut current_token, (row, col));
                         }
                         self.add_token(&mut tokens, &",".to_string(), (row, col));
-                        current_token.clear();
                     }
                 }
 
+                // check for:
+                // ==, =>,  !=, <=, >=
                 '=' => {
                     if in_comment {
                     } else if in_string {
                         current_token.push(*c);
                     } else {
-                        if self.peak(&mut ptr, 0) == Some(&'>')
+                        // if the preceding token is a !, > or <, parse a !=, <= or >=, respectively, then continue
+                        // note that it must be succeeded by a whitespace to be valid
+                        if (current_token == "!" || current_token == ">" || current_token == "<")
+                            && (self.peak(&mut ptr, 1).is_none()
+                                || self.peak(&mut ptr, 1).unwrap().is_ascii_whitespace())
+                        {
+                            current_token.push(*c);
+                            self.add(&mut tokens, &mut current_token, (row, col));
+                            continue;
+                        // else, check if the next character is = or >
+                        } else if self.peak(&mut ptr, 0) == Some(&'>')
                             || self.peak(&mut ptr, 0) == Some(&'=')
                         {
+                            // clear the current token first
                             if current_token.len() > 0 {
-                                self.add_token(&mut tokens, &current_token, (row, col));
+                                self.add(&mut tokens, &mut current_token, (row, col));
                             }
-                            self.add_token(
-                                &mut tokens,
-                                &format!("{}{}", *c, self.peak(&mut ptr, 0).unwrap()),
-                                (row, col),
-                            );
-                            self.eat(&mut ptr);
+                            current_token.push(*self.eat(&mut ptr).unwrap());
+                            self.add(&mut tokens, &mut current_token, (row, col));
                             col += 1;
-                            current_token.clear();
+                        // anything else directly succeeding a = is invalid, so panic
                         } else {
                             panic!(format!("Unexpected token {} at character {}.", *c, ptr));
                         }
@@ -428,11 +463,12 @@ impl Tokenizer {
                             self.add_token(&mut tokens, &"]#".to_string(), (row, col));
                             // System.Console.WriteLine("current token: '" + current_token + "'");
                             in_comment = false;
+                            current_token.clear();
                         } else {
                             if !in_comment {
                                 // System.Console.WriteLine("ct: " + current_token);
                                 if current_token.len() > 0 {
-                                    self.add_token(&mut tokens, &current_token, (row, col));
+                                    self.add(&mut tokens, &mut current_token, (row, col));
                                 }
                                 self.add_token(&mut tokens, &c.to_string(), (row, col));
                                 current_token.clear();
@@ -508,15 +544,16 @@ impl Tokenizer {
                     }
                 }
 
-                // (| (|-
+                // (|
                 '(' => {
                     if in_comment {
                     } else {
                         match self.eat(&mut ptr) {
+                            // FIXME: get rid of - option
                             Some(&'|') => {
                                 if let Some(&'-') = self.peak(&mut ptr, 0) {
                                     col += 1;
-                                    self.add_token(&mut tokens, &"(|-".to_string(), (row, col));
+                                    self.add_token(&mut tokens, &"|-".to_string(), (row, col));
                                     self.eat(&mut ptr);
                                 } else {
                                     col += 1;
@@ -531,21 +568,20 @@ impl Tokenizer {
                     }
                 }
 
-                // |)
+                // |), |-
                 '|' => {
                     if in_comment {
                     } else {
                         match self.peak(&mut ptr, 0) {
-                            Some(x @ &')') /* | Some(x @ &'-') */ => {
+                            Some(x @ (&')' | &'-')) /* | Some(x @ &'-') */ => {
                                 if current_token.len() > 0 {
-                                    self.add_token(&mut tokens, &current_token, (row, col));
-                                    current_token.clear();
+                                    self.add(&mut tokens, &mut current_token, (row, col));
                                 }
                                 self.eat(&mut ptr);
                                 col += 1;
                                 self.add_token(
                                     &mut tokens,
-                                    &vec!['|', *x].into_iter().collect::<String>(),
+                                    &format!("|{}", *x),
                                     (row, col),
                                 );
                             }
@@ -589,10 +625,23 @@ impl Tokenizer {
             .map(|tok| Token {
                 token_type: match &tok.token_type {
                     TokenType::Identifier(val) => {
-                        if val.split('.').all(|t| t.chars().all(|c| c.is_numeric())) {
-                            TokenType::NumLiteral(val.parse::<f64>().unwrap())
-                        } else {
-                            tok.token_type.clone()
+                        let mut split_val = val.split('.');
+                        if split_val.clone().collect::<Vec<_>>().len() > 2 {
+                            panic!("Inalid numeric literal: `{}`", val)
+                        }
+                        match (split_val.next(), split_val.next()) {
+                            (Some(int), Some(frac)) => TokenType::NumLiteral(
+                                int.parse().expect("Invalid numeric literal"),
+                                format!("{:0<38}", frac)
+                                    .parse()
+                                    .expect("Invalid numeric literal"),
+                            ),
+                            (Some(int), None) => TokenType::NumLiteral(
+                                int.parse().expect("Invalid numeric literal"),
+                                0,
+                            ),
+                            (None, None) => tok.token_type.clone(),
+                            _ => unreachable!(),
                         }
                     }
                     _ => tok.token_type.clone(),
@@ -641,3 +690,5 @@ impl Tokenizer {
         final_string
     }
 }
+
+fn parse_num_lit() {}

@@ -208,7 +208,7 @@ pub mod defs {
         /// ```yaupl
         /// 1597
         /// ```
-        NumericLiteral(f64),
+        NumericLiteral(i128, u128),
         /// ### Examples
         /// ```yaupl
         /// func_name [arg1] [arg2] [arg3]
@@ -550,18 +550,14 @@ pub mod funcs {
 
             // number token
             Some(
-                num_tok
-                @
                 Token {
-                    token_type: TokenType::NumLiteral(_),
-                    ..
+                    token_type: TokenType::NumLiteral(int, frac),
+                    location_end: end,
+                    location_start: start,
                 },
             ) => Some(AstNode::new(
-                Location::from_token(num_tok),
-                Expression::NumericLiteral(match &num_tok.token_type {
-                    TokenType::NumLiteral(val) => val.clone(),
-                    _ => unreachable!(),
-                }),
+                (*start, *end).into(),
+                Expression::NumericLiteral(*int, *frac),
             )),
 
             // if its not any of those three, then it's not a literal expression and as such return `None`
