@@ -3,102 +3,102 @@ use colored::*;
 #[derive(Clone, Debug, std::cmp::PartialEq)]
 pub enum TokenType {
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// + - * / == != < > <= >=
     /// ```
     BinaryOperator(String),
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// "..."
     /// ```
     StrLiteral(String),
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// 71632
     /// ```
     NumLiteral(f64),
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// true
     /// ```
     BlnLiteral(bool),
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// [
     /// ```
     BraceSquareOpen,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// ]
     /// ```
     BraceSquareClose,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// {
     /// ```
     BraceCurlyOpen,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// }
     /// ```
     BraceCurlyClose,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// (|
     /// ```
     BraceGroupOpen,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// |)
     /// ```
     BraceGroupClose,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// -|)
     /// ```
     TeslaOpen,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// (|-
     /// ```
     TeslaClose,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// <-
     /// ```
     ArrowLeft,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// ->
     /// ```
     ArrowRight,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// =>
     /// ```
     ArrowRightThick,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// ~>
     /// ```
     ArrowRightCurly,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// #[
     /// ```
     CommentOpen,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// !!#[
     /// ```
     DocCommentOpen,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// ]#
     /// ```
     CommentClose,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// export
     /// ```
     KeywordExport,
@@ -111,23 +111,23 @@ pub enum TokenType {
     KeywordNum,
     KeywordEmp,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// :
     /// ```
     Colon,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// @
     /// ```
     Group,
     Identifier(String),
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// ,
     /// ```
     Comma,
     /// ### Examples
-    /// ```hmm
+    /// ```yaupl
     /// ;
     /// ```
     SemiColon,

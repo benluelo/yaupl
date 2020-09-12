@@ -1,6 +1,6 @@
 program = {with statement}, {expression};
 
-with statement = "with", whitespace, identifier, ".hmm", whitespace, "as",  whitespace, identifier;
+with statement = "with", whitespace, identifier, ".yaupl", whitespace, "as",  whitespace, identifier;
 
 letter = "A" | "B" | "C" | "D" | "E" | "F" | "G"
        | "H" | "I" | "J" | "K" | "L" | "M" | "N"

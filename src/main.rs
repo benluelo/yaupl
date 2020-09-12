@@ -1,6 +1,7 @@
 pub mod ast;
 pub mod token;
 pub mod temp;
+pub mod types;
 
 use ast::funcs::*;
 use token::*;

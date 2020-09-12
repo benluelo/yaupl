@@ -1,5 +1,5 @@
 [package]
-name = "hmm_rust"
+name = "yaupl_rust"
 version = "0.1.0"
 authors = ["Ben <benluelo@hotmail.com>"]
 edition = "2018"

@@ -154,22 +154,22 @@ pub mod defs {
     #[derive(Debug, Eq, PartialEq)]
     pub enum Type {
         /// ### Examples
-        /// ```hmm
+        /// ```yaupl
         /// str
         /// ```
         Primitive(PrimitiveType),
         /// ### Examples
-        /// ```hmm
+        /// ```yaupl
         /// num@@
         /// ```
         Group(AstNode<Box<Type>>),
         /// ### Examples
-        /// ```hmm
+        /// ```yaupl
         /// [a: str, b: bln@, c: [num, bln]=>___]
         /// ```
         Complex(HashMap<AstNode<Identifier>, AstNode<Type>>),
         /// ### Examples
-        /// ```hmm
+        /// ```yaupl
         /// [num, bln]=>___
         /// ```
         Function {
@@ -195,22 +195,22 @@ pub mod defs {
     #[derive(Debug)]
     pub enum Expression {
         /// ### Examples
-        /// ```hmm
+        /// ```yaupl
         /// true
         /// ```
         BooleanLiteral(bool),
         /// ### Examples
-        /// ```hmm
+        /// ```yaupl
         /// "..."
         /// ```
         StringLiteral(String),
         /// ### Examples
-        /// ```hmm
+        /// ```yaupl
         /// 1597
         /// ```
         NumericLiteral(f64),
         /// ### Examples
-        /// ```hmm
+        /// ```yaupl
         /// func_name [arg1] [arg2] [arg3]
         /// ```
         FunctionCall {
@@ -621,7 +621,7 @@ pub mod funcs {
     }
 
     /// Tries to parse a type out of the stream.
-    /// ```hmm
+    /// ```yaupl
     /// str some_str <- "hello",
     /// ^^^
     /// ```
@@ -636,7 +636,7 @@ pub mod funcs {
         tokens: &mut Iter<'parse_type, Token>,
     ) -> Option<AstNode<Type>> {
         /// Tries to parse a primitive value out of the stream.
-        /// ```hmm
+        /// ```yaupl
         /// str some_str <- "hello",
         /// ^^^
         /// ```
@@ -663,7 +663,7 @@ pub mod funcs {
         };
 
         /// Tries to parse a complex value out of the stream.
-        /// ```hmm
+        /// ```yaupl
         /// [a: str, b: num] some_str <- (|-
         /// ^^^^^^^^^^^^^^^^
         ///     a: "hello",
@@ -687,7 +687,7 @@ pub mod funcs {
             ///
             /// This function doesn't return anything, it merely has side effects.
             ///
-            /// ```hmm
+            /// ```yaupl
             /// [a: str, b: num] some_str <- (|-
             ///  ^^^^^^  ^^^^^^
             ///     a: "hello",
@@ -817,7 +817,7 @@ pub mod funcs {
         }
 
         /// Tries to parse a function value out of the stream.
-        /// ```hmm
+        /// ```yaupl
         /// bln some_function [a: str, b: num] -> {
         ///     #[ some stuff happens here... ]#
         ///     return true,
@@ -842,7 +842,7 @@ pub mod funcs {
             ///
             /// This function doesn't return anything, it merely has side effects.
             ///
-            /// ```hmm
+            /// ```yaupl
             /// [str, num]=>bln some_str [a: str, b: num] -> {
             /// ^^^^^^^^^^
             ///     #[ some stuff happens here... ]#
