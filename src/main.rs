@@ -3,6 +3,7 @@
 pub mod ast;
 pub mod token;
 pub mod types;
+pub mod constants;
 
 use token::*;
 
