@@ -6,7 +6,7 @@ pub enum TokenType {
     /// ```yaupl
     /// + - * / == != < > <= >=
     /// ```
-    BinaryOperator(String),
+    BinaryOperator(BinaryOperator),
     /// ### Examples
     /// ```yaupl
     /// "..."
@@ -141,6 +141,39 @@ pub enum TokenType {
 //     }
 // }
 
+#[derive(Clone, Debug, std::cmp::PartialEq)]
+pub enum BinaryOperator {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Gt,
+    Lt,
+    Gte,
+    Lte,
+    Eq,
+    Neq,
+}
+
+impl BinaryOperator {}
+
+impl ToString for BinaryOperator {
+    fn to_string(&self) -> String {
+        match self {
+            BinaryOperator::Add => "+".into(),
+            BinaryOperator::Sub => "-".into(),
+            BinaryOperator::Mul => "*".into(),
+            BinaryOperator::Div => "/".into(),
+            BinaryOperator::Gt => ">".into(),
+            BinaryOperator::Lt => "<".into(),
+            BinaryOperator::Gte => "<=".into(),
+            BinaryOperator::Lte => ">=".into(),
+            BinaryOperator::Eq => "==".into(),
+            BinaryOperator::Neq => "!=".into(),
+        }
+    }
+}
+
 impl std::fmt::Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -245,12 +278,12 @@ impl Tokenizer {
                 map.insert("str", TokenType::KeywordStr);
                 map.insert("bln", TokenType::KeywordBln);
                 map.insert("emp", TokenType::KeywordEmp);
-                map.insert("+", TokenType::BinaryOperator("+".to_string()));
-                map.insert("-", TokenType::BinaryOperator("-".to_string()));
-                map.insert("*", TokenType::BinaryOperator("*".to_string()));
-                map.insert("/", TokenType::BinaryOperator("/".to_string()));
-                map.insert("==", TokenType::BinaryOperator("==".to_string()));
-                map.insert("!=", TokenType::BinaryOperator("!=".to_string()));
+                map.insert("+", TokenType::BinaryOperator(BinaryOperator::Add));
+                map.insert("-", TokenType::BinaryOperator(BinaryOperator::Sub));
+                map.insert("*", TokenType::BinaryOperator(BinaryOperator::Mul));
+                map.insert("/", TokenType::BinaryOperator(BinaryOperator::Div));
+                map.insert("==", TokenType::BinaryOperator(BinaryOperator::Eq));
+                map.insert("!=", TokenType::BinaryOperator(BinaryOperator::Neq));
                 map.insert("<-", TokenType::ArrowLeft);
                 map.insert("->", TokenType::ArrowRight);
                 map.insert("~>", TokenType::ArrowRightCurly);
@@ -592,7 +625,11 @@ impl Tokenizer {
                     final_string.push_str(
                         format!(
                             "{}{} ",
-                            if new_line { "\t".repeat(indent) } else { String::new() },
+                            if new_line {
+                                "\t".repeat(indent)
+                            } else {
+                                String::new()
+                            },
                             tok.token_type
                         )
                         .as_str(),
