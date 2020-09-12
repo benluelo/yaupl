@@ -12,5 +12,5 @@ fn main() {
 
     let token_stream = Tokenizer::new(args[1].to_string()).tokenize();
 
-    println!("{:#?}, {}", token_stream, Tokenizer::print(&token_stream));
+    println!("{:#?}\n{}", token_stream, Tokenizer::print(&token_stream));
 }

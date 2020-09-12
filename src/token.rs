@@ -1,6 +1,6 @@
-use std::{collections::HashMap, fmt::Display, fs::read_to_string};
 use crate::constants::*;
 use colored::*;
+use std::{collections::HashMap, fmt::Display, fs::read_to_string};
 
 #[derive(Clone, Debug, std::cmp::PartialEq)]
 pub enum TokenType {
@@ -295,16 +295,46 @@ impl Tokenizer {
                 map.insert(KEYWORD_EMP, TokenType::KeywordEmp);
                 map.insert(INFINITY, TokenType::Infinity);
                 map.insert(NEGATIVE_INFINITY, TokenType::NegativeInfinity);
-                map.insert(BINARY_OPERATOR_ADD, TokenType::BinaryOperator(BinaryOperator::Add));
-                map.insert(BINARY_OPERATOR_SUB, TokenType::BinaryOperator(BinaryOperator::Sub));
-                map.insert(BINARY_OPERATOR_MUL, TokenType::BinaryOperator(BinaryOperator::Mul));
-                map.insert(BINARY_OPERATOR_DIV, TokenType::BinaryOperator(BinaryOperator::Div));
-                map.insert(BINARY_OPERATOR_EQ, TokenType::BinaryOperator(BinaryOperator::Eq));
-                map.insert(BINARY_OPERATOR_NEQ, TokenType::BinaryOperator(BinaryOperator::Neq));
-                map.insert(BINARY_OPERATOR_GT, TokenType::BinaryOperator(BinaryOperator::Gt));
-                map.insert(BINARY_OPERATOR_LT, TokenType::BinaryOperator(BinaryOperator::Lt));
-                map.insert(BINARY_OPERATOR_GTE, TokenType::BinaryOperator(BinaryOperator::Gte));
-                map.insert(BINARY_OPERATOR_LTE, TokenType::BinaryOperator(BinaryOperator::Lte));
+                map.insert(
+                    BINARY_OPERATOR_ADD,
+                    TokenType::BinaryOperator(BinaryOperator::Add),
+                );
+                map.insert(
+                    BINARY_OPERATOR_SUB,
+                    TokenType::BinaryOperator(BinaryOperator::Sub),
+                );
+                map.insert(
+                    BINARY_OPERATOR_MUL,
+                    TokenType::BinaryOperator(BinaryOperator::Mul),
+                );
+                map.insert(
+                    BINARY_OPERATOR_DIV,
+                    TokenType::BinaryOperator(BinaryOperator::Div),
+                );
+                map.insert(
+                    BINARY_OPERATOR_EQ,
+                    TokenType::BinaryOperator(BinaryOperator::Eq),
+                );
+                map.insert(
+                    BINARY_OPERATOR_NEQ,
+                    TokenType::BinaryOperator(BinaryOperator::Neq),
+                );
+                map.insert(
+                    BINARY_OPERATOR_GT,
+                    TokenType::BinaryOperator(BinaryOperator::Gt),
+                );
+                map.insert(
+                    BINARY_OPERATOR_LT,
+                    TokenType::BinaryOperator(BinaryOperator::Lt),
+                );
+                map.insert(
+                    BINARY_OPERATOR_GTE,
+                    TokenType::BinaryOperator(BinaryOperator::Gte),
+                );
+                map.insert(
+                    BINARY_OPERATOR_LTE,
+                    TokenType::BinaryOperator(BinaryOperator::Lte),
+                );
                 map.insert(ARROW_LEFT, TokenType::ArrowLeft);
                 map.insert(ARROW_RIGHT, TokenType::ArrowRight);
                 map.insert(ARROW_RIGHT_CURLY, TokenType::ArrowRightCurly);
@@ -557,7 +587,11 @@ impl Tokenizer {
                                     self.eat(&mut ptr);
                                 } else {
                                     col += 1;
-                                    self.add_token(&mut tokens, &BRACE_GROUP_OPEN.to_string(), (row, col));
+                                    self.add_token(
+                                        &mut tokens,
+                                        &BRACE_GROUP_OPEN.to_string(),
+                                        (row, col),
+                                    );
                                 }
                             }
                             Some(next1) => {
@@ -630,16 +664,24 @@ impl Tokenizer {
                             panic!("Inalid numeric literal: `{}`", val)
                         }
                         match (split_val.next(), split_val.next()) {
+                            // fractional number
                             (Some(int), Some(frac)) => TokenType::NumLiteral(
                                 int.parse().expect("Invalid numeric literal"),
                                 format!("{:0<38}", frac)
                                     .parse()
                                     .expect("Invalid numeric literal"),
                             ),
-                            (Some(int), None) => TokenType::NumLiteral(
-                                int.parse().expect("Invalid numeric literal"),
-                                0,
-                            ),
+
+                            // whole number (or an identifier)
+                            (Some(int), None) => {
+                                if let Ok(num) = int.parse::<i128>() {
+                                    TokenType::NumLiteral(num, 0)
+                                } else {
+                                    tok.token_type.clone()
+                                }
+                            }
+
+                            // ???
                             (None, None) => tok.token_type.clone(),
                             _ => unreachable!(),
                         }
@@ -647,6 +689,18 @@ impl Tokenizer {
                     _ => tok.token_type.clone(),
                 },
                 ..*tok
+            })
+            .into_iter()
+            .map(|tok| {
+                match &tok.token_type {
+                    TokenType::Identifier(ident) => {
+                        if !ident.chars().all(|c| c.is_ascii_alphabetic() || c == '_') {
+                            panic!("Invalid identifier: {}", tok.clone())
+                        }
+                    }
+                    _ => {}
+                };
+                tok
             })
             .collect()
     }
