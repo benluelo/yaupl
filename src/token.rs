@@ -1,5 +1,5 @@
 use std::{collections::HashMap, fmt::Display, fs::read_to_string};
-
+use crate::constants::*;
 use colored::*;
 
 #[derive(Clone, Debug, std::cmp::PartialEq)]
@@ -164,16 +164,16 @@ impl BinaryOperator {}
 impl ToString for BinaryOperator {
     fn to_string(&self) -> String {
         match self {
-            BinaryOperator::Add => "+".into(),
-            BinaryOperator::Sub => "-".into(),
-            BinaryOperator::Mul => "*".into(),
-            BinaryOperator::Div => "/".into(),
-            BinaryOperator::Gt => ">".into(),
-            BinaryOperator::Lt => "<".into(),
-            BinaryOperator::Gte => ">=".into(),
-            BinaryOperator::Lte => "<=".into(),
-            BinaryOperator::Eq => "==".into(),
-            BinaryOperator::Neq => "!=".into(),
+            BinaryOperator::Add => BINARY_OPERATOR_ADD.into(),
+            BinaryOperator::Sub => BINARY_OPERATOR_SUB.into(),
+            BinaryOperator::Mul => BINARY_OPERATOR_MUL.into(),
+            BinaryOperator::Div => BINARY_OPERATOR_DIV.into(),
+            BinaryOperator::Gt => BINARY_OPERATOR_GT.into(),
+            BinaryOperator::Lt => BINARY_OPERATOR_LT.into(),
+            BinaryOperator::Gte => BINARY_OPERATOR_GTE.into(),
+            BinaryOperator::Lte => BINARY_OPERATOR_LTE.into(),
+            BinaryOperator::Eq => BINARY_OPERATOR_EQ.into(),
+            BinaryOperator::Neq => BINARY_OPERATOR_NEQ.into(),
         }
     }
 }
@@ -191,44 +191,44 @@ impl Display for TokenType {
                     .trim_end_matches('.')
                     .red()
                     .to_string(),
-                TokenType::Infinity => "oo".to_string().red().to_string(),
-                TokenType::NegativeInfinity => "-oo".to_string().red().to_string(),
+                TokenType::Infinity => INFINITY.to_string().red().to_string(),
+                TokenType::NegativeInfinity => NEGATIVE_INFINITY.to_string().red().to_string(),
                 TokenType::BlnLiteral(val) => val.to_string().red().to_string(),
-                TokenType::BraceSquareOpen => "[".to_string(),
-                TokenType::BraceSquareClose => "]".to_string(),
-                TokenType::BraceCurlyOpen => "{".to_string(),
-                TokenType::BraceCurlyClose => "}".to_string(),
-                TokenType::BraceGroupOpen => "(|".to_string(),
-                TokenType::BraceGroupClose => "|)".to_string(),
-                TokenType::TeslaOpen => "|-".to_string(),
-                TokenType::TeslaClose => "-|".to_string(),
-                TokenType::ArrowLeft => "<-".to_string(),
-                TokenType::ArrowRight => "->".to_string(),
-                TokenType::ArrowRightThick => "=>".to_string(),
-                TokenType::ArrowRightCurly => "~>".to_string(),
+                TokenType::BraceSquareOpen => BRACE_SQUARE_OPEN.to_string(),
+                TokenType::BraceSquareClose => BRACE_SQUARE_CLOSE.to_string(),
+                TokenType::BraceCurlyOpen => BRACE_CURLY_OPEN.to_string(),
+                TokenType::BraceCurlyClose => BRACE_CURLY_CLOSE.to_string(),
+                TokenType::BraceGroupOpen => BRACE_GROUP_OPEN.to_string(),
+                TokenType::BraceGroupClose => BRACE_GROUP_CLOSE.to_string(),
+                TokenType::TeslaOpen => TESLA_OPEN.to_string(),
+                TokenType::TeslaClose => TESLA_CLOSE.to_string(),
+                TokenType::ArrowLeft => ARROW_LEFT.to_string(),
+                TokenType::ArrowRight => ARROW_RIGHT.to_string(),
+                TokenType::ArrowRightThick => ARROW_RIGHT_THICK.to_string(),
+                TokenType::ArrowRightCurly => ARROW_RIGHT_CURLY.to_string(),
 
-                TokenType::CommentOpen => "#[".dimmed().to_string(),
-                TokenType::DocCommentOpen => "!!#[".dimmed().to_string(),
-                TokenType::CommentClose => "]#".dimmed().to_string(),
+                TokenType::CommentOpen => COMMENT_OPEN.dimmed().to_string(),
+                TokenType::DocCommentOpen => DOC_COMMENT_OPEN.dimmed().to_string(),
+                TokenType::CommentClose => COMMENT_CLOSE.dimmed().to_string(),
 
                 // keywords (magenta)
-                TokenType::KeywordExport => "export".magenta().to_string(),
-                TokenType::KeywordReturn => "return".magenta().to_string(),
-                TokenType::KeywordWith => "with".magenta().to_string(),
-                TokenType::KeywordAs => "as".magenta().to_string(),
+                TokenType::KeywordExport => KEYWORD_EXPORT.magenta().to_string(),
+                TokenType::KeywordReturn => KEYWORD_RETURN.magenta().to_string(),
+                TokenType::KeywordWith => KEYWORD_WITH.magenta().to_string(),
+                TokenType::KeywordAs => KEYWORD_AS.magenta().to_string(),
 
                 // types (blue)
-                TokenType::Keyword___ => "___".blue().to_string(),
-                TokenType::KeywordStr => "str".blue().to_string(),
-                TokenType::KeywordBln => "bln".blue().to_string(),
-                TokenType::KeywordNum => "num".blue().to_string(),
-                TokenType::KeywordEmp => "emp".blue().to_string(),
+                TokenType::Keyword___ => KEYWORD____.blue().to_string(),
+                TokenType::KeywordStr => KEYWORD_STR.blue().to_string(),
+                TokenType::KeywordBln => KEYWORD_BLN.blue().to_string(),
+                TokenType::KeywordNum => KEYWORD_NUM.blue().to_string(),
+                TokenType::KeywordEmp => KEYWORD_EMP.blue().to_string(),
 
-                TokenType::Colon => ":".to_string(),
-                TokenType::Group => "@".to_string(),
+                TokenType::Colon => COLON.to_string(),
+                TokenType::Group => GROUP.to_string(),
                 TokenType::Identifier(val) => val.to_string(),
-                TokenType::Comma => ",".to_string(),
-                TokenType::SemiColon => ";".to_string(),
+                TokenType::Comma => COMMA.to_string(),
+                TokenType::SemiColon => SEMI_COLON.to_string(),
             }
         )
     }
@@ -282,47 +282,47 @@ impl Tokenizer {
             file: string.chars().collect(),
             keywords: {
                 let mut map: HashMap<&'static str, TokenType> = HashMap::new();
-                map.insert("export", TokenType::KeywordExport);
-                map.insert("with", TokenType::KeywordWith);
-                map.insert("as", TokenType::KeywordAs);
-                map.insert("return", TokenType::KeywordReturn);
-                map.insert("true", TokenType::BlnLiteral(true));
-                map.insert("false", TokenType::BlnLiteral(false));
-                map.insert("___", TokenType::Keyword___);
-                map.insert("num", TokenType::KeywordNum);
-                map.insert("str", TokenType::KeywordStr);
-                map.insert("bln", TokenType::KeywordBln);
-                map.insert("emp", TokenType::KeywordEmp);
-                map.insert("oo", TokenType::Infinity);
-                map.insert("-oo", TokenType::NegativeInfinity);
-                map.insert("+", TokenType::BinaryOperator(BinaryOperator::Add));
-                map.insert("-", TokenType::BinaryOperator(BinaryOperator::Sub));
-                map.insert("*", TokenType::BinaryOperator(BinaryOperator::Mul));
-                map.insert("/", TokenType::BinaryOperator(BinaryOperator::Div));
-                map.insert("==", TokenType::BinaryOperator(BinaryOperator::Eq));
-                map.insert("!=", TokenType::BinaryOperator(BinaryOperator::Neq));
-                map.insert(">", TokenType::BinaryOperator(BinaryOperator::Gt));
-                map.insert("<", TokenType::BinaryOperator(BinaryOperator::Lt));
-                map.insert(">=", TokenType::BinaryOperator(BinaryOperator::Gte));
-                map.insert("<=", TokenType::BinaryOperator(BinaryOperator::Lte));
-                map.insert("<-", TokenType::ArrowLeft);
-                map.insert("->", TokenType::ArrowRight);
-                map.insert("~>", TokenType::ArrowRightCurly);
-                map.insert("=>", TokenType::ArrowRightThick);
-                map.insert("@", TokenType::Group);
-                map.insert("[", TokenType::BraceSquareOpen);
-                map.insert("]", TokenType::BraceSquareClose);
-                map.insert("{", TokenType::BraceCurlyOpen);
-                map.insert("}", TokenType::BraceCurlyClose);
-                map.insert("(|", TokenType::BraceGroupOpen);
-                map.insert("|)", TokenType::BraceGroupClose);
-                map.insert("|-", TokenType::TeslaOpen);
-                map.insert("-|", TokenType::TeslaClose);
-                map.insert("#[", TokenType::CommentOpen);
-                map.insert("!!#[", TokenType::DocCommentOpen);
-                map.insert("]#", TokenType::CommentClose);
-                map.insert(",", TokenType::Comma);
-                map.insert(":", TokenType::Colon);
+                map.insert(KEYWORD_EXPORT, TokenType::KeywordExport);
+                map.insert(KEYWORD_WITH, TokenType::KeywordWith);
+                map.insert(KEYWORD_AS, TokenType::KeywordAs);
+                map.insert(KEYWORD_RETURN, TokenType::KeywordReturn);
+                map.insert(KEYWORD_TRUE, TokenType::BlnLiteral(true));
+                map.insert(KEYWORD_FALSE, TokenType::BlnLiteral(false));
+                map.insert(KEYWORD____, TokenType::Keyword___);
+                map.insert(KEYWORD_NUM, TokenType::KeywordNum);
+                map.insert(KEYWORD_STR, TokenType::KeywordStr);
+                map.insert(KEYWORD_BLN, TokenType::KeywordBln);
+                map.insert(KEYWORD_EMP, TokenType::KeywordEmp);
+                map.insert(INFINITY, TokenType::Infinity);
+                map.insert(NEGATIVE_INFINITY, TokenType::NegativeInfinity);
+                map.insert(BINARY_OPERATOR_ADD, TokenType::BinaryOperator(BinaryOperator::Add));
+                map.insert(BINARY_OPERATOR_SUB, TokenType::BinaryOperator(BinaryOperator::Sub));
+                map.insert(BINARY_OPERATOR_MUL, TokenType::BinaryOperator(BinaryOperator::Mul));
+                map.insert(BINARY_OPERATOR_DIV, TokenType::BinaryOperator(BinaryOperator::Div));
+                map.insert(BINARY_OPERATOR_EQ, TokenType::BinaryOperator(BinaryOperator::Eq));
+                map.insert(BINARY_OPERATOR_NEQ, TokenType::BinaryOperator(BinaryOperator::Neq));
+                map.insert(BINARY_OPERATOR_GT, TokenType::BinaryOperator(BinaryOperator::Gt));
+                map.insert(BINARY_OPERATOR_LT, TokenType::BinaryOperator(BinaryOperator::Lt));
+                map.insert(BINARY_OPERATOR_GTE, TokenType::BinaryOperator(BinaryOperator::Gte));
+                map.insert(BINARY_OPERATOR_LTE, TokenType::BinaryOperator(BinaryOperator::Lte));
+                map.insert(ARROW_LEFT, TokenType::ArrowLeft);
+                map.insert(ARROW_RIGHT, TokenType::ArrowRight);
+                map.insert(ARROW_RIGHT_CURLY, TokenType::ArrowRightCurly);
+                map.insert(ARROW_RIGHT_THICK, TokenType::ArrowRightThick);
+                map.insert(GROUP, TokenType::Group);
+                map.insert(BRACE_SQUARE_OPEN, TokenType::BraceSquareOpen);
+                map.insert(BRACE_SQUARE_CLOSE, TokenType::BraceSquareClose);
+                map.insert(BRACE_CURLY_OPEN, TokenType::BraceCurlyOpen);
+                map.insert(BRACE_CURLY_CLOSE, TokenType::BraceCurlyClose);
+                map.insert(BRACE_GROUP_OPEN, TokenType::BraceGroupOpen);
+                map.insert(BRACE_GROUP_CLOSE, TokenType::BraceGroupClose);
+                map.insert(TESLA_OPEN, TokenType::TeslaOpen);
+                map.insert(TESLA_CLOSE, TokenType::TeslaClose);
+                map.insert(COMMENT_OPEN, TokenType::CommentOpen);
+                map.insert(DOC_COMMENT_OPEN, TokenType::DocCommentOpen);
+                map.insert(COMMENT_CLOSE, TokenType::CommentClose);
+                map.insert(COMMA, TokenType::Comma);
+                map.insert(COLON, TokenType::Colon);
                 map
             },
         }
@@ -460,7 +460,7 @@ impl Tokenizer {
                         if in_comment && next == Some(&'#') {
                             self.eat(&mut ptr);
                             col += 1;
-                            self.add_token(&mut tokens, &"]#".to_string(), (row, col));
+                            self.add_token(&mut tokens, &COMMENT_OPEN.to_string(), (row, col));
                             // System.Console.WriteLine("current token: '" + current_token + "'");
                             in_comment = false;
                             current_token.clear();
@@ -490,7 +490,7 @@ impl Tokenizer {
                         col += 1;
                         col += 1;
                         println!("row: {}, col: {}", row, col);
-                        self.add_token(&mut tokens, &"!!#[".to_string(), (row, col));
+                        self.add_token(&mut tokens, &DOC_COMMENT_OPEN.to_string(), (row, col));
                         in_comment = true;
                     } else {
                         println!(
@@ -557,7 +557,7 @@ impl Tokenizer {
                                     self.eat(&mut ptr);
                                 } else {
                                     col += 1;
-                                    self.add_token(&mut tokens, &"(|".to_string(), (row, col));
+                                    self.add_token(&mut tokens, &BRACE_GROUP_OPEN.to_string(), (row, col));
                                 }
                             }
                             Some(next1) => {
@@ -651,6 +651,7 @@ impl Tokenizer {
             .collect()
     }
 
+    #[deprecated = "it sucks don't use it"]
     pub fn print(tokens: &Vec<Token>) -> String {
         let mut final_string = String::new();
         let mut indent = 0;
