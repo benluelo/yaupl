@@ -45,7 +45,7 @@ pub fn fuzz(length: u32) -> (String, Vec<String>) {
     all.push(Box::new(random_identifier));
     all.push(Box::new(random_string));
     all.push(Box::new(|| {
-        thread_rng().gen_range(f64::MIN, f64::MAX).to_string()
+        thread_rng().gen_range(f32::MIN, f32::MAX).to_string()
     }));
     (0..length)
         .into_iter()
