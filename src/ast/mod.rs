@@ -1,46 +1,11 @@
+use self::pointer::span::Span;
+
 // pub(crate) mod defs {
 //     use crate::token::*;
 //     use std::{collections::BTreeMap, convert::From};
 //     use std::{collections::HashMap, fmt::Debug};
 
-    #[derive(Debug, Eq, Hash, PartialEq, std::cmp::Ord, std::cmp::PartialOrd, Copy, Clone)]
-    pub(crate) struct Position {
-        pub(crate) row: usize,
-        pub(crate) col: usize,
-    }
 
-    impl From<(usize, usize)> for Position {
-        fn from(val: (usize, usize)) -> Self {
-            Position {
-                row: val.0,
-                col: val.1,
-            }
-        }
-    }
-
-    impl Position {
-        pub(crate) fn new(val: (usize, usize)) -> Self {
-            Position {
-                row: val.0,
-                col: val.1,
-            }
-        }
-    }
-
-    #[derive(Debug, Eq, Hash, PartialEq, std::cmp::Ord, std::cmp::PartialOrd, Copy, Clone)]
-    pub(crate) struct Location {
-        pub(crate) start: Position,
-        pub(crate) end: Position,
-    }
-
-    impl From<((usize, usize), (usize, usize))> for Location {
-        fn from(tuple: ((usize, usize), (usize, usize))) -> Self {
-            Location {
-                start: tuple.0.into(),
-                end: tuple.1.into(),
-            }
-        }
-    }
 
     // impl Location {
     //     /// Creates a new `Location` instance from a `Token`, using the
@@ -87,14 +52,15 @@
 //         pub(crate) return_statement: AstNode<R>,
 //     }
 
+pub(crate) mod pointer;
     #[derive(Debug, Eq, Hash, PartialEq, std::cmp::Ord, std::cmp::PartialOrd)]
     pub(crate) struct AstNode<T: ?Sized> {
-        pub(crate) location: Location,
+        pub(crate) location: Span,
         pub(crate) body: T,
     }
 
     impl<T> AstNode<T> {
-        pub(crate) fn new(location: Location, body: T) -> Self {
+        pub(crate) fn new(location: Span, body: T) -> Self {
             Self { location, body }
         }
 

@@ -1,48 +1,17 @@
-use std::{any::Any, collections::BTreeMap, fmt::Debug};
+use std::{collections::BTreeMap, fmt::Debug};
 
 use pointer::Pointer;
 use tokens::*;
 
-use crate::ast::AstNode;
-
-use self::combinators::one_of;
+use self::{combinators::one_of, tokens::token::Token, whitespace::whitespace};
 
 // use crate::ast::defs::{types::*, *};
 
 pub(crate) mod combinators;
+pub(crate) mod pointer;
 #[allow(dead_code)]
 pub(crate) mod tokens;
-
-pub(crate) trait Token: /* Any + */ Debug /* + Ord + PartialOrd + Eq + PartialEq */ {
-    fn token(&self) -> &str;
-}
-
-impl<'a> PartialEq for Box<dyn Token + 'a> {
-    fn eq(&self, other: &Box<dyn Token + 'a>) -> bool {
-        self.token().eq(other.token())
-    }
-}
-
-impl<'a> Eq for Box<dyn Token + 'a> {}
-
-impl<'a> PartialOrd for Box<dyn Token + 'a> {
-    fn partial_cmp(&self, other: &Box<dyn Token + 'a>) -> Option<std::cmp::Ordering> {
-        self.token().partial_cmp(other.token())
-    }
-}
-
-impl<'a> Ord for Box<dyn Token + 'a> {
-    fn cmp(&self, other: &Box<dyn Token + 'a>) -> std::cmp::Ordering {
-        self.token().cmp(other.token())
-    }
-}
-
-pub(crate) mod pointer;
-
-// #[allow(type_alias_bounds)]
-// pub(crate) type Res<'a, T: Debug + Token> = Result<(&'a str, Pointer, Box<T>), ParseError>;
-
-// trait Func<'a, T: Debug> = Fn(&'a str, Pointer) -> Res<'a, T>;
+pub(crate) mod whitespace;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -54,29 +23,6 @@ pub(crate) enum ParseError {
     OneOf,
     OneOrMore,
 }
-
-// impl ParseError {
-//     pub(crate) fn as_dyn(self) -> ParseError {
-//         match self {
-//             ParseError::Expected(t) => ParseError::Expected(t as Box<dyn Token>),
-//             ParseError::None => ParseError::None,
-//             ParseError::OneOf => ParseError::OneOf,
-//             ParseError::OneOrMore => ParseError::OneOrMore,
-//             ParseError::ExpectedOneOf(v) => {
-//                 ParseError::ExpectedOneOf(v.into_iter().map(|i| i as Box<dyn Token>).collect())
-//             }
-//         }
-//         // *self as ParseError<dyn Token>
-//     }
-//     //     fn into_vec(self) -> ParseError<Vec<T>> {
-//     //         match self {
-//     //             ParseError::Expected(x) => {ParseError::Expected(vec![T])}
-//     //             ParseError::None => {}
-//     //             ParseError::OneOf => {}
-//     //             ParseError::OneOrMore => {}
-//     //         }
-//     //     }
-// }
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub(crate) struct Identifier(String);
@@ -111,42 +57,6 @@ fn ident(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Identifier), ParseErro
         ptr.add_row(end_location),
         Identifier(i[..end_location].into()),
     ))
-}
-
-pub(crate) fn whitespace(i: &str, ptr: Pointer) -> (&str, Pointer) {
-    let mut ch_inds = i.char_indices();
-    let mut prev_ind = 0;
-    let mut rows = 0;
-    let mut cols = 0;
-    let end_location = loop {
-        match ch_inds.next() {
-            Some((ind, ch @ ('\n' | '\r' | '\t' | ' '))) => {
-                cols += 1;
-                if ch == '\n' || ch == '\r' {
-                    rows += 1;
-                    cols = 0;
-                }
-                prev_ind = ind;
-                continue;
-            }
-            Some((ind, _)) => break ind,
-            None => break prev_ind,
-        };
-    };
-    (&i[end_location..], ptr.add_col(cols).add_row(rows))
-}
-
-#[cfg(test)]
-mod test_white_space {
-    use super::*;
-
-    #[test]
-    fn test_white_space() {
-        assert_eq!(
-            whitespace(" \n        hello", Pointer { row: 0, col: 0 }),
-            ("hello", Pointer { row: 1, col: 8 })
-        );
-    }
 }
 
 #[cfg(test)]

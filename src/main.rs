@@ -2,6 +2,8 @@
 
 use std::fs::read_to_string;
 
+use crate::parse::r#type;
+
 mod ast;
 mod fuzzer;
 mod parse;
@@ -13,7 +15,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     dbg!(&args);
     let s = read_to_string("test.y").unwrap();
-    let res = crate::parse::r#type(&s, (0usize, 0usize).into());
+    let res = r#type(&s, (0usize, 0usize).into());
     println!("{:#?}", res);
 }
 
