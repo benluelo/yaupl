@@ -1,5 +1,5 @@
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub(crate) struct Pointer {
+pub struct Pointer {
     pub(crate) row: usize,
     pub(crate) col: usize,
 }

@@ -12,8 +12,8 @@ use self::{
     whitespace::whitespace,
 };
 
-pub fn parse(i: &str) -> Result<Type, ParseError> {
-    yaupl_type(i, Pointer::new(0, 0)).map(|res| res.2)
+pub fn parse(i: &str) -> Result<(&str, Pointer, Type), ParseError> {
+    yaupl_type(i, Pointer::new(0, 0))
 }
 // use crate::ast::defs::{types::*, *};
 
