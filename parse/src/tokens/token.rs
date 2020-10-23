@@ -1,6 +1,6 @@
-use std::{fmt::Debug, cmp::Ordering};
+use std::{cmp::Ordering, fmt::Debug};
 
-pub(crate) trait Token: Debug {
+pub trait Token: Debug {
     fn token(&self) -> &str;
 }
 

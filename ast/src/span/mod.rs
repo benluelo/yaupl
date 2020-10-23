@@ -1,4 +1,5 @@
-use super::position::Position;
+pub(crate) mod position;
+use self::position::Position;
 
 #[derive(Debug, Eq, Hash, PartialEq, std::cmp::Ord, std::cmp::PartialOrd, Copy, Clone)]
 pub(crate) struct Span {

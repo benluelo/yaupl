@@ -1,6 +1,8 @@
-use crate::parse::{pointer::Pointer, ParseError, Token};
+// use crate::parse::{pointer::Pointer, ParseError, types::primitive::PrimitiveType};
 
-use super::{PrimitiveType, whitespace::*};
+use crate::{parse_error::ParseError, pointer::Pointer, types::primitive::PrimitiveType};
+
+use super::{whitespace::*};
 pub(crate) mod token;
 use token::*;
 /// ```yaupl

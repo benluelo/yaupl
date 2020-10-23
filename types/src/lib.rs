@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 use std::ops::{Add, Sub};
 
 const FRACTIONAL_WRAP: u128 = 100_000_000_000_000_000_000_000_000_000_000_000_000;
@@ -24,6 +25,7 @@ impl Number {
         }
     }
 
+    #[allow(dead_code)]
     pub fn one() -> Self {
         Number::Num {
             integral: 1,
@@ -96,17 +98,27 @@ mod test_number {
 
     #[test]
     fn test_add() {
-        assert_eq!(Number::from_parts(123456, 98278734873) + Number::from_parts(929, 2334), Number::from_parts(124385, 98278737207));
+        assert_eq!(
+            Number::from_parts(123456, 98278734873) + Number::from_parts(929, 2334),
+            Number::from_parts(124385, 98278737207)
+        );
     }
 
     #[test]
     fn test_wrapping_add() {
-        assert_eq!(Number::from_parts(10, 99_999_999_999_999_999_999_999_999_999_999_999_999) + Number::from_parts(10, 2), Number::from_parts(21, 1));
+        assert_eq!(
+            Number::from_parts(10, 99_999_999_999_999_999_999_999_999_999_999_999_999)
+                + Number::from_parts(10, 2),
+            Number::from_parts(21, 1)
+        );
     }
 
     #[test]
     fn test_overflow() {
-        assert_eq!(Number::from_parts(i128::MAX, 0) + Number::from_parts(1, 0), Number::Infinity);
+        assert_eq!(
+            Number::from_parts(i128::MAX, 0) + Number::from_parts(1, 0),
+            Number::Infinity
+        );
     }
 }
 

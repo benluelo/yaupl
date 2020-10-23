@@ -3,11 +3,6 @@ pub(crate) struct Pointer {
     pub(crate) row: usize,
     pub(crate) col: usize,
 }
-impl From<(usize, usize)> for Pointer {
-    fn from(tuple: (usize, usize)) -> Self {
-        Self::new(tuple.0, tuple.1)
-    }
-}
 
 impl Pointer {
     pub fn new(row: usize, col: usize) -> Self {
@@ -21,5 +16,17 @@ impl Pointer {
     #[allow(dead_code)]
     pub fn add_col(self, col: usize) -> Self {
         Pointer::new(self.row, self.col + col)
+    }
+}
+
+impl From<(usize, usize)> for Pointer {
+    fn from(tuple: (usize, usize)) -> Self {
+        Self::new(tuple.0, tuple.1)
+    }
+}
+
+impl From<Pointer> for (usize, usize) {
+    fn from(ptr: Pointer) -> Self {
+      (ptr.row, ptr.col)
     }
 }

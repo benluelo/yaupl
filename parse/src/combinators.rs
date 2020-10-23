@@ -1,4 +1,4 @@
-use super::{pointer::Pointer, ParseError, PrimitiveType};
+use super::{pointer::Pointer, ParseError};
 
 // pub(crate) fn optionally<'a, T: Token>(
 //     f: impl Fn(&'a str, Pointer) -> Res<T>,
@@ -9,12 +9,22 @@ use super::{pointer::Pointer, ParseError, PrimitiveType};
 //     }
 // }
 
+pub(crate) fn not<'a, /* 'f: 'a, */ T>(
+    i: &'a str,
+    ptr: Pointer,
+    f: &'a dyn Fn(&'a str, Pointer) -> Result<(&'a str, Pointer, T), ParseError>,
+) -> Result<ParseError, (&'a str, Pointer, T)> {
+    match f(i, ptr) {
+        Ok(ok) => Err(ok),
+        Err(err) => Ok(err),
+    }
+}
+
 pub(crate) fn one_of<'a, /* 'f: 'a, */ T>(
     i: &'a str,
     ptr: Pointer,
     fns: &'a [&'a dyn Fn(&'a str, Pointer) -> Result<(&'a str, Pointer, T), ParseError>],
-) -> Result<(&'a str, Pointer, T), ParseError>
-{
+) -> Result<(&'a str, Pointer, T), ParseError> {
     for f in fns {
         match f(i, ptr) {
             res @ Ok(_) => return res,

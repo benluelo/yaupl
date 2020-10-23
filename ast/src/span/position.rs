@@ -13,6 +13,7 @@ impl From<(usize, usize)> for Position {
     }
 }
 
+#[allow(dead_code)]
 impl Position {
     pub(crate) fn new(val: (usize, usize)) -> Self {
         Position {
