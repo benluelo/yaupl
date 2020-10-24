@@ -1,19 +1,14 @@
 use std::collections::BTreeMap;
 
-use crate::{
-    parse_error::ParseError, pointer::Pointer, tokens::group, types::complex::Complex,
-    types::function::Function, types::tuple::Tuple, Identifier,
-};
-
-use self::primitive::PrimitiveType;
-
-// use super::{Identifier, parse_error::ParseError, pointer::Pointer, tokens::group};
+use crate::{Identifier, parse_error::ParseError, pointer::Pointer, types::primitive::PrimitiveType, tokens::group, types::complex::Complex, types::function::Function, types::tuple::Tuple};
 
 pub(crate) mod complex;
 pub(crate) mod function;
 pub(crate) mod primitive;
 pub(crate) mod tuple;
 
+/// TODO: deal with types in brackets `[ ]`
+/// how many levels of brackets should be allowed?
 pub(crate) fn yaupl_type(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Type), ParseError> {
     let (i, ptr, mut res) = primitive::primitive(i, ptr)
         .or(function::function(i, ptr))
@@ -34,7 +29,6 @@ pub(crate) fn yaupl_type(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Type),
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Group(Box<Type>);
 
-// REFACTOR: make the enum variants tuple structs containing their respective data
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Type {
     /// The basic types.

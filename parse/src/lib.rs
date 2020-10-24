@@ -20,11 +20,11 @@ pub fn parse(i: &str) -> Result<(&str, Pointer, Type), ParseError> {
 pub(crate) mod combinators;
 pub(crate) mod parse_error;
 pub(crate) mod pointer;
-#[allow(dead_code)]
 pub(crate) mod tokens;
 pub(crate) mod types;
 mod utils;
 pub(crate) mod whitespace;
+pub(crate) mod expression;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Identifier(String);
@@ -74,7 +74,7 @@ fn ident(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Identifier), ParseErro
 
     Ok((
         &i[end_location..],
-        ptr.add_row(end_location),
+        ptr.add_col(end_location),
         Identifier(i[..end_location].into()),
     ))
 }
