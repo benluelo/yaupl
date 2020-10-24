@@ -1,6 +1,6 @@
 use super::{
-    ident, parse_error::ParseError, pointer::Pointer, tokens::colon, types::yaupl_type, types::Type,
-    Identifier,
+    ident, parse_error::ParseError, pointer::Pointer, tokens::colon, types::yaupl_type,
+    types::Type, Identifier,
 };
 
 pub(crate) fn key_value_pair(

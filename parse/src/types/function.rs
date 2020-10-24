@@ -2,6 +2,12 @@ use crate::{parse_error::ParseError, pointer::Pointer, tokens::arrow_right_thick
 
 use super::{tuple::tuple, yaupl_type, Type};
 
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub struct Function {
+    parameters: Vec<Type>,
+    return_type: Box<Type>,
+}
+
 /// REFACTOR
 /// TODO: can't rely on the tuple function anymore since the tuples have a different syntax (`[| |]` vs `[ ]`)
 pub(crate) fn function(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Type), ParseError> {
@@ -19,9 +25,9 @@ pub(crate) fn function(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Type), P
     Ok((
         i,
         ptr,
-        Type::Function {
-            parameters,
+        Type::Function(Function {
+            parameters: parameters.0,
             return_type: Box::new(return_type),
-        },
+        }),
     ))
 }

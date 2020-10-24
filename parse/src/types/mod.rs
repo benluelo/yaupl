@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 
-use crate::{parse_error::ParseError, pointer::Pointer, tokens::group, Identifier};
+use crate::{
+    parse_error::ParseError, pointer::Pointer, tokens::group, types::complex::Complex,
+    types::function::Function, types::tuple::Tuple, Identifier,
+};
 
 use self::primitive::PrimitiveType;
 
@@ -22,12 +25,15 @@ pub(crate) fn yaupl_type(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Type),
         if let Ok((new_i, new_ptr, _group_sigil)) = group(i, ptr) {
             i = new_i;
             ptr = new_ptr;
-            res = Type::Group(Box::new(res));
+            res = Type::Group(Group(Box::new(res)));
         } else {
             return Ok((i, ptr, res));
         };
     }
 }
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub struct Group(Box<Type>);
+
 // REFACTOR: make the enum variants tuple structs containing their respective data
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum Type {
@@ -42,26 +48,23 @@ pub enum Type {
     /// ```yaupl
     /// [str, num, [str, bln]=>num]
     /// ```
-    Tuple(Vec<Type>),
+    Tuple(Tuple),
     /// Used for an unsized collection of something of the same type.
     /// ### Examples
     /// ```yaupl
     /// num@@
     /// ```
-    Group(Box<Type>),
+    Group(Group),
     /// Synonymous to a struct, a key: value pair of types.
     /// ### Examples
     /// ```yaupl
     /// [a: str, b: bln@, c: [num, bln]=>___]
     /// ```
-    Complex(BTreeMap<Identifier, Type>),
+    Complex(Complex),
     /// A function that takes the types of the left side of the arrow and returns the right side.
     /// ### Examples
     /// ```yaupl
     /// [num, bln]=>___
     /// ```
-    Function {
-        parameters: Vec<Type>,
-        return_type: Box<Type>,
-    },
+    Function(Function),
 }

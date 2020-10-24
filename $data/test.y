@@ -1,3 +1,5 @@
+[|str, bln, num|]
+
 [|
   |-
     a: str@@,

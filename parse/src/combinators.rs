@@ -1,3 +1,5 @@
+use crate::tokens::comma;
+
 use super::{pointer::Pointer, ParseError};
 
 // pub(crate) fn optionally<'a, T: Token>(
@@ -9,6 +11,30 @@ use super::{pointer::Pointer, ParseError};
 //     }
 // }
 
+pub(crate) fn csv<'a, T>(
+    i: &'a str,
+    ptr: Pointer,
+    f: &'a dyn Fn(&'a str, Pointer) -> Result<(&'a str, Pointer, T), ParseError>,
+) -> Result<(&'a str, Pointer, Vec<T>), ParseError> {
+    let mut found_types = vec![];
+    let (mut i, mut ptr) = (i, ptr);
+    loop {
+        if let Ok(values) = f(i, ptr) {
+            i = values.0;
+            ptr = values.1;
+            found_types.push(values.2);
+            if let Ok(comma) = comma(i, ptr) {
+                i = comma.0;
+                ptr = comma.1;
+            }
+        } else {
+            break;
+        }
+    }
+    Ok((i, ptr, found_types))
+}
+
+// TODO: flip the result
 pub(crate) fn not<'a, /* 'f: 'a, */ T>(
     i: &'a str,
     ptr: Pointer,

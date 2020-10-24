@@ -2,7 +2,7 @@
 
 use crate::{parse_error::ParseError, pointer::Pointer, types::primitive::PrimitiveType};
 
-use super::{whitespace::*};
+use super::whitespace::*;
 pub(crate) mod token;
 use token::*;
 /// ```yaupl
@@ -526,7 +526,11 @@ pub(crate) fn tuple_close(
 ) -> Result<(&str, Pointer, TeslaClose), ParseError> {
     let (i, ptr) = whitespace(i, ptr);
     if i.starts_with("|]") {
-        Ok((&i[TupleClose.token().len()..], ptr.add_col("|]".len()), TeslaClose))
+        Ok((
+            &i[TupleClose.token().len()..],
+            ptr.add_col("|]".len()),
+            TeslaClose,
+        ))
     } else {
         Err(ParseError::Expected(Box::new(TeslaClose)))
     }
@@ -797,7 +801,11 @@ pub(crate) fn keyword_str(
 ) -> Result<(&str, Pointer, PrimitiveType), ParseError> {
     let (i, ptr) = whitespace(i, ptr);
     if i.starts_with("str") {
-        Ok((&i["str".len()..], ptr.add_col("str".len()), PrimitiveType::Str))
+        Ok((
+            &i["str".len()..],
+            ptr.add_col("str".len()),
+            PrimitiveType::Str,
+        ))
     } else {
         Err(ParseError::Expected(Box::new(KeywordStr)))
     }
@@ -819,7 +827,11 @@ pub(crate) fn keyword_bln(
 ) -> Result<(&str, Pointer, PrimitiveType), ParseError> {
     let (i, ptr) = whitespace(i, ptr);
     if i.starts_with("bln") {
-        Ok((&i["bln".len()..], ptr.add_col("bln".len()), PrimitiveType::Bln))
+        Ok((
+            &i["bln".len()..],
+            ptr.add_col("bln".len()),
+            PrimitiveType::Bln,
+        ))
     } else {
         Err(ParseError::Expected(Box::new(KeywordBln)))
     }
@@ -841,7 +853,11 @@ pub(crate) fn keyword_num(
 ) -> Result<(&str, Pointer, PrimitiveType), ParseError> {
     let (i, ptr) = whitespace(i, ptr);
     if i.starts_with("num") {
-        Ok((&i["num".len()..], ptr.add_col("num".len()), PrimitiveType::Num))
+        Ok((
+            &i["num".len()..],
+            ptr.add_col("num".len()),
+            PrimitiveType::Num,
+        ))
     } else {
         Err(ParseError::Expected(Box::new(KeywordNum)))
     }
@@ -863,7 +879,11 @@ pub(crate) fn keyword_emp(
 ) -> Result<(&str, Pointer, PrimitiveType), ParseError> {
     let (i, ptr) = whitespace(i, ptr);
     if i.starts_with("___") {
-        Ok((&i["___".len()..], ptr.add_col("___".len()), PrimitiveType::Emp))
+        Ok((
+            &i["___".len()..],
+            ptr.add_col("___".len()),
+            PrimitiveType::Emp,
+        ))
     } else {
         Err(ParseError::Expected(Box::new(KeywordEmp)))
     }

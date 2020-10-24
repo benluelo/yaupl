@@ -5,9 +5,13 @@ use crate::{
     pointer::Pointer,
     tokens::{comma, tesla_close, tesla_open},
     utils::key_value_pair,
+    Identifier,
 };
 
 use super::Type;
+
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub struct Complex(BTreeMap<Identifier, Type>);
 
 pub(crate) fn complex(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Type), ParseError> {
     let mut map = BTreeMap::new();
@@ -33,5 +37,5 @@ pub(crate) fn complex(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Type), Pa
 
     let (i, ptr, _bracket) = tesla_close(i, ptr)?;
 
-    Ok((i, ptr, Type::Complex(map)))
+    Ok((i, ptr, Type::Complex(Complex(map))))
 }

@@ -27,6 +27,6 @@ impl From<(usize, usize)> for Pointer {
 
 impl From<Pointer> for (usize, usize) {
     fn from(ptr: Pointer) -> Self {
-      (ptr.row, ptr.col)
+        (ptr.row, ptr.col)
     }
 }
