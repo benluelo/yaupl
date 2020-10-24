@@ -17,5 +17,5 @@ pub enum Expression {
 }
 
 pub(crate) fn expression(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Expression), ParseError> {
-    todo!()
+  literal(i, ptr).or(binary_operation(i, ptr)).or(function_call(i, ptr)
 }

@@ -1,5 +1,9 @@
 use std::marker::PhantomData;
 
+pub (crate) fn literal(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Expression), ParseError> {
+  todo!()
+}
+
 pub enum Literal {
     Bln(Bln),
     Str(Str),
