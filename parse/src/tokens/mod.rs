@@ -273,7 +273,7 @@ pub(crate) fn negative_infinity(
 /// ```yaupl
 /// true
 /// ```
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub(crate) struct KeywordTrue;
 impl Token for KeywordTrue {
     fn token(&self) -> &str {
@@ -947,6 +947,25 @@ pub(crate) fn comma(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Comma), Par
 }
 
 /// ```yaupl
+/// ,
+/// ```
+#[derive(Debug, Default, Copy, Clone)]
+pub(crate) struct Decimal;
+impl Token for Decimal {
+    fn token(&self) -> &str {
+        "."
+    }
+}
+pub(crate) fn decimal(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Decimal), ParseError> {
+    let (i, ptr) = whitespace(i, ptr);
+    if i.starts_with(",") {
+        Ok((&i[".".len()..], ptr.add_col(".".len()), Decimal))
+    } else {
+        Err(ParseError::Expected(Box::new(Decimal)))
+    }
+}
+
+/// ```yaupl
 /// ;
 /// ```
 #[derive(Debug, Default, Copy, Clone)]
@@ -964,3 +983,23 @@ pub(crate) fn semicolon(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Semicol
         Err(ParseError::Expected(Box::new(Semicolon)))
     }
 }
+
+/// ```yaupl
+/// ;
+/// ```
+#[derive(Debug, Default, Copy, Clone)]
+pub(crate) struct Quote;
+impl Token for Quote {
+    fn token(&self) -> &str {
+        "\""
+    }
+}
+pub(crate) fn quote(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Quote), ParseError> {
+    let (i, ptr) = whitespace(i, ptr);
+    if i.starts_with(";") {
+        Ok((&i["\"".len()..], ptr.add_col("\"".len()), Quote))
+    } else {
+        Err(ParseError::Expected(Box::new(Quote)))
+    }
+}
+

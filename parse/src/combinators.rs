@@ -1,15 +1,17 @@
-use crate::tokens::comma;
+use crate::tokens::{comma, token::Token};
 
 use super::{pointer::Pointer, ParseError};
 
-// pub(crate) fn optionally<'a, T: Token>(
-//     f: impl Fn(&'a str, Pointer) -> Res<T>,
-// ) -> impl Fn(&'a str, Pointer) -> Option<Res<'a, T>> {
-//     move |i: &'a str, ptr: Pointer| match f(i, ptr) {
-//         Ok(res) => Some(Ok(res)),
-//         Err(_) => None,
-//     }
-// }
+pub(crate) fn optionally<'a, T>(
+    i: &'a str,
+    ptr: Pointer,
+    f: &dyn Fn(&'a str, Pointer) -> Result<(&'a str, Pointer, T), ParseError>,
+) -> (&'a str, Pointer, Option<T>) {
+    match f(i, ptr) {
+        Ok(res) => (res.0, res.1, Some(res.2)),
+        Err(_) => (i, ptr, None),
+    }
+}
 
 pub(crate) fn csv<'a, T>(
     i: &'a str,
@@ -62,27 +64,31 @@ pub(crate) fn one_of<'a, /* 'f: 'a, */ T>(
     Err(ParseError::None)
 }
 
-// pub(crate) fn one_or_more<'a, T: Default + Token + 'static>(
-//     f: impl Fn(&'a str, Pointer) -> Res<T>,
-// ) -> impl Fn(&'a str, Pointer) -> Res<'a, Vec<T>> {
-//     move |i: &'a str, ptr: Pointer| loop {
-//         let mut i = i.clone();
-//         let mut ptr = ptr.clone();
-//         let mut found = Box::new(vec![]);
-//         match f(i, ptr) {
-//             Ok((fi, fptr, res)) => {
-//                 found.push(*res);
-//                 i = fi;
-//                 ptr = fptr;
-//                 continue;
-//             }
-//             Err(err) => match found.len() {
-//                 0 => return Err(ParseError::Expected(Box::new(vec![T::default()]))),
-//                 _ => return Ok((i, ptr, found)),
-//             },
-//         }
-//     }
-// }
+pub(crate) fn one_or_more<'a, T: Token + Default + 'static>(
+    i: &'a str,
+    ptr: Pointer,
+    f: &'a dyn Fn(&'a str, Pointer) -> Result<(&'a str, Pointer, T), ParseError>,
+) -> Result<(&'a str, Pointer, Vec<T>), ParseError> {
+    let mut i = i.clone();
+    let mut ptr = ptr.clone();
+    loop {
+        let mut found = vec![];
+        match f(i, ptr) {
+            Ok((fi, fptr, res)) => {
+                found.push(res);
+                i = fi;
+                ptr = fptr;
+                continue;
+            }
+            Err(err) => match found.len() {
+                0 => {
+                    return Err(err)
+                }
+                _ => return Ok((i, ptr, found)),
+            },
+        }
+    }
+}
 
 // pub(crate) fn zero_or_more<'a, T: Default + Token + 'static>(
 //     f: impl Fn(&'a str, Pointer) -> Res<T>,

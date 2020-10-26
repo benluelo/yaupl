@@ -18,13 +18,84 @@ pub fn parse(i: &str) -> Result<(&str, Pointer, Type), ParseError> {
 // use crate::ast::defs::{types::*, *};
 
 pub(crate) mod combinators;
+pub(crate) mod expression;
 pub(crate) mod parse_error;
 pub(crate) mod pointer;
 pub(crate) mod tokens;
 pub(crate) mod types;
-mod utils;
+pub(crate) mod utils;
 pub(crate) mod whitespace;
-pub(crate) mod expression;
+
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub(crate) enum Digit {
+    Zero,
+    One,
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
+}
+
+impl Token for Digit {
+    fn token(&self) -> &str {
+        match self {
+            Digit::Zero => "0",
+            Digit::One => "1",
+            Digit::Two => "2",
+            Digit::Three => "3",
+            Digit::Four => "4",
+            Digit::Five => "5",
+            Digit::Six => "6",
+            Digit::Seven => "7",
+            Digit::Eight => "8",
+            Digit::Nine => "9",
+        }
+    }
+}
+
+impl Default for Digit {
+    fn default() -> Self {
+        Self::Zero
+    }
+}
+
+impl From<char> for Digit {
+    fn from(ch: char) -> Self {
+        match ch {
+            '0' => Digit::Zero,
+            '1' => Digit::One,
+            '2' => Digit::Two,
+            '3' => Digit::Three,
+            '4' => Digit::Four,
+            '5' => Digit::Five,
+            '6' => Digit::Six,
+            '7' => Digit::Seven,
+            '8' => Digit::Eight,
+            '9' => Digit::Nine,
+            _ => panic!("Invalid digit: {}", ch),
+        }
+    }
+}
+// impl Digit {
+//     pub(crate) fn from_char(ch: char) -> Digit {
+//     }
+// }
+pub(crate) fn digit(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Digit), ParseError> {
+    let (i, ptr) = whitespace(i, ptr);
+    if let Some(ch) = i.chars().next() {
+        if ch.is_ascii_digit() {
+            Ok((&i[1..], ptr.add_col(1), ch.into()))
+        } else {
+            Err(ParseError::ExpectedDigit)
+        }
+    } else {
+        Err(ParseError::None)
+    }
+}
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Identifier(String);

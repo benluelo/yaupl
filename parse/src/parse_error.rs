@@ -9,7 +9,9 @@ pub enum ParseError {
     UnexpectedKeyword(Box<dyn Token + 'static>),
     None,
     OneOf,
-    OneOrMore,
+    OneOrMoe,
+    ExpectedDigit,
+    UnterminatedStringLiteral,
 }
 
 impl<T: Token + 'static> From<(&str, Pointer, T)> for ParseError {

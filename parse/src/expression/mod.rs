@@ -1,4 +1,5 @@
 use crate::{
+    expression::{binary_operations::binary_operation, literal::literal, function_call::function_call},
     expression::{
         binary_operations::BinaryOperation, function_call::FunctionCall, literal::Literal,
     },
@@ -17,5 +18,7 @@ pub enum Expression {
 }
 
 pub(crate) fn expression(i: &str, ptr: Pointer) -> Result<(&str, Pointer, Expression), ParseError> {
-  literal(i, ptr).or(binary_operation(i, ptr)).or(function_call(i, ptr)
+    literal(i, ptr)
+        .or(binary_operation(i, ptr))
+        .or(function_call(i, ptr).map(|res| (res.0, res.1, Expression::FunctionCall(res.2))))
 }
